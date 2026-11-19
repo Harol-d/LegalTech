@@ -1,0 +1,1757 @@
+<!-- El error ocurre porque dentro de la función `exportToDOCX()` en el bloque `<script>` había etiquetas HTML literales (`</head>`, `</body>` y `</html>`) dentro de un *template string*. Algunos navegadores y entornos de previsualización interpretan esas etiquetas de cierre como el fin real del documento, cortando el `<script>` y mostrando el resto del código JavaScript en pantalla.
+
+Para solucionarlo, se deben escapar las barras de cierre (`<\/head>`, `<\/body>`, `<\/html>`) dentro de las cadenas de texto en JavaScript y asegurar el escape de comillas simples en `escapeHTML()`.
+
+Código completo corregido y listo para abrir en el navegador:
+
+```html -->
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VentureLex AI | LegalTech SaaS para Startups</title>
+  
+  <!-- Google Fonts: Inter (UI), Lora & Merriweather (Documentos Legales), JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- html2pdf.js CDN para exportación PDF real -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            legal: ['Lora', 'Merriweather', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f5fe',
+              100: '#e0ecfd',
+              200: '#c7defb',
+              500: '#2563eb',
+              600: '#1d4ed8',
+              700: '#1e40af',
+              900: '#0f172a',
+            },
+            accent: {
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          },
+          boxShadow: {
+            'paper': '0 20px 45px -10px rgba(15, 23, 42, 0.14), 0 0 1px 1px rgba(15, 23, 42, 0.06)',
+            'floating': '0 12px 30px -4px rgba(15, 23, 42, 0.16), 0 4px 12px -2px rgba(15, 23, 42, 0.08)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Scrollbar personalizado estilo SaaS */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Destello suave para reactividad en vivo en la hoja legal */
+    .highlight-flash {
+      animation: flashGlow 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      padding: 0 2px;
+    }
+
+    @keyframes flashGlow {
+      0% {
+        background-color: rgba(251, 191, 36, 0.48);
+        color: #78350f;
+        border-radius: 4px;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+      }
+      100% {
+        background-color: transparent;
+        color: inherit;
+        border-radius: 2px;
+        box-shadow: none;
+      }
+    }
+
+    /* Efecto Skeleton Shimmer durante generación con IA */
+    .ai-shimmer {
+      background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite linear;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    /* Cursor parpadeante tipo typewriter */
+    .ai-cursor::after {
+      content: '▋';
+      color: #4f46e5;
+      animation: blinkCursor 0.8s infinite;
+      margin-left: 2px;
+    }
+
+    @keyframes blinkCursor {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    /* Transiciones de entrada para pasos del formulario */
+    .fade-enter {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.28s ease-out, transform 0.28s ease-out;
+    }
+    .fade-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Simulación de hoja tamaño Carta / A4 */
+    .legal-sheet {
+      min-height: 1080px;
+      box-sizing: border-box;
+      line-height: 1.78;
+      transition: all 0.25s ease;
+    }
+
+    /* Estilos de impresión limpia */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printable-contract, #printable-contract * {
+        visibility: visible;
+      }
+      #printable-contract {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 2.2cm 2cm !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-800 font-sans antialiased flex flex-col overflow-hidden">
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- HEADER SUPERIOR -->
+  <header class="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between text-white shrink-0 z-30">
+    <div class="flex items-center space-x-3">
+      <!-- Botón colapsar sidebar -->
+      <button type="button" onclick="window.toggleSidebar()" title="Colapsar / Expandir menú" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition">
+        <i data-lucide="panel-left" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Logo Marca LegalTech -->
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
+          <i data-lucide="scale" class="w-4 h-4 text-white"></i>
+        </div>
+        <div class="flex items-center space-x-1.5">
+          <span class="font-bold tracking-tight text-sm text-white">VentureLex</span>
+          <span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">AI</span>
+        </div>
+      </div>
+
+      <div class="h-4 w-px bg-slate-700 hidden sm:block"></div>
+
+      <!-- Breadcrumbs y Estado del Documento -->
+      <div class="hidden sm:flex items-center space-x-2 text-xs">
+        <span class="text-slate-400">Documentos</span>
+        <span class="text-slate-600">/</span>
+        <span id="header-doc-title" class="font-medium text-slate-200 max-w-[220px] truncate">Acuerdo de Confidencialidad (NDA)</span>
+        <span id="header-status-badge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+          Borrador v1.0
+        </span>
+      </div>
+    </div>
+
+    <!-- Controles Derecho: Historial, Tokens IA, Guardar y Finalizar -->
+    <div class="flex items-center space-x-2.5">
+      <!-- Selector Historial de Versiones -->
+      <div class="flex items-center space-x-1.5 bg-slate-800/90 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs">
+        <i data-lucide="history" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <label for="version-select" class="text-slate-400 hidden lg:inline">Versión:</label>
+        <select id="version-select" onchange="window.switchVersion(this.value)" class="bg-transparent text-slate-200 text-xs font-medium focus:outline-none cursor-pointer max-w-[175px]">
+          <option value="v1.0" class="bg-slate-900 text-slate-200">v1.0 - Inicial</option>
+        </select>
+      </div>
+
+      <!-- Medidor Simulado de Tokens IA -->
+      <div class="hidden md:flex items-center space-x-2 bg-slate-800/90 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs" title="Créditos de generación y análisis legal IA">
+        <div class="flex items-center space-x-1 text-indigo-400">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span class="text-slate-300 font-medium">Tokens IA:</span>
+        </div>
+        <div class="w-16 bg-slate-700 h-1.5 rounded-full overflow-hidden">
+          <div id="token-progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-full w-[21%] transition-all duration-500"></div>
+        </div>
+        <span id="token-counter-text" class="text-[11px] font-mono text-slate-300">420 / 2,000</span>
+      </div>
+
+      <!-- Botón Guardar Borrador -->
+      <button type="button" onclick="window.quickSaveDocument()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg border border-slate-700 transition">
+        <i data-lucide="save" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Guardar</span>
+      </button>
+
+      <!-- Botón Finalizar Contrato -->
+      <button type="button" onclick="window.markAsFinalized()" id="btn-finalize" class="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-medium shadow-sm transition">
+        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+        <span>Finalizar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL DEL WORKSPACE -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- SIDEBAR IZQUIERDO COLAPSABLE -->
+    <aside id="main-sidebar" class="w-60 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 transition-all duration-300 overflow-hidden">
+      <div class="p-3 space-y-6">
+        <!-- Navegación Principal -->
+        <nav class="space-y-1">
+          <button type="button" onclick="window.switchTab('editor')" id="nav-editor" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 transition">
+            <i data-lucide="file-plus-2" class="w-4 h-4 shrink-0"></i>
+            <span class="sidebar-label truncate">Nuevo Documento</span>
+          </button>
+          
+          <button type="button" onclick="window.switchTab('contracts')" id="nav-contracts" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <i data-lucide="folder-lock" class="w-4 h-4 shrink-0"></i>
+            <span class="sidebar-label flex-1 text-left truncate">Mis Contratos</span>
+            <span id="contracts-counter-badge" class="sidebar-label px-1.5 py-0.5 text-[10px] rounded-full bg-slate-800 text-slate-300 font-mono">4</span>
+          </button>
+
+          <button type="button" onclick="window.openStartupProfileModal()" id="nav-profile" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition">
+            <i data-lucide="building-2" class="w-4 h-4 shrink-0"></i>
+            <span class="sidebar-label truncate">Perfil de mi Startup</span>
+          </button>
+        </nav>
+
+        <!-- Selector Rápido de Plantillas -->
+        <div class="sidebar-label">
+          <div class="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            Plantillas Inteligentes
+          </div>
+          <div class="space-y-1">
+            <button type="button" onclick="window.selectContractType('nda')" id="tab-pill-nda" class="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs text-white font-medium bg-slate-800 border-l-2 border-indigo-500 transition">
+              <span class="truncate">NDA Confidencialidad</span>
+              <span class="text-[9px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-300">Mutual</span>
+            </button>
+            <button type="button" onclick="window.selectContractType('vesting')" id="tab-pill-vesting" class="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs text-slate-400 hover:bg-slate-800/60 transition">
+              <span class="truncate">Vesting Co-fundadores</span>
+              <span class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">4Y/1Y</span>
+            </button>
+            <button type="button" onclick="window.selectContractType('services')" id="tab-pill-services" class="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs text-slate-400 hover:bg-slate-800/60 transition">
+              <span class="truncate">Servicios Tech Dev</span>
+              <span class="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400">IP/Dev</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta Resumen de Startup Activa -->
+      <div class="p-3 border-t border-slate-800/80 space-y-3 bg-slate-950/40 sidebar-label">
+        <div class="p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-400">Startup Activa</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </div>
+          <div id="sidebar-startup-name" class="text-xs font-semibold text-slate-200 truncate">Krypton Labs S.A.S.</div>
+          <div id="sidebar-startup-taxid" class="text-[10px] text-slate-400 font-mono">NIT: 901.458.921-3</div>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+          <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Bóveda Legal</span>
+          <button type="button" class="text-indigo-400 hover:underline cursor-pointer" onclick="window.openStartupProfileModal()">Editar perfil</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTENEDOR DE VISTAS -->
+    <main class="flex-1 flex overflow-hidden bg-slate-100">
+
+      <!-- ============================================================== -->
+      <!-- VISTA 1: ESPACIO DE TRABAJO SPLIT-SCREEN (50% / 50%)            -->
+      <!-- ============================================================== -->
+      <div id="view-editor" class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+
+        <!-- PANEL IZQUIERDO (50%): ASISTENTE Y FORMULARIO DINÁMICO -->
+        <section class="w-full lg:w-1/2 bg-white border-r border-slate-200 flex flex-col lg:h-full overflow-hidden shrink-0">
+          
+          <!-- Cabecera del Wizard y Botón Demo -->
+          <div class="p-4 border-b border-slate-200/80 bg-slate-50/70 flex flex-col gap-3 shrink-0">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h1 class="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Asistente de Perfilamiento Jurídico</span>
+                  <span class="px-2 py-0.5 text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md">IA LegalTech</span>
+                </h1>
+                <p class="text-xs text-slate-500 mt-0.5">Completa los parámetros y observa la redacción en tiempo real</p>
+              </div>
+
+              <!-- Botón Cargar Datos Demo -->
+              <button type="button" onclick="window.loadDemoData()" class="flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition active:scale-95 shadow-sm shrink-0">
+                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                <span>Cargar datos demo</span>
+              </button>
+            </div>
+
+            <!-- Stepper con Barra de Progreso -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                  <button type="button" onclick="window.goToStep(1)" id="step-btn-1" class="font-semibold text-indigo-600 flex items-center space-x-1.5">
+                    <span class="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                    <span>Startup</span>
+                  </button>
+                  <span class="text-slate-300">/</span>
+                  <button type="button" onclick="window.goToStep(2)" id="step-btn-2" class="font-medium text-slate-400 hover:text-slate-600 flex items-center space-x-1.5">
+                    <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] flex items-center justify-center font-bold">2</span>
+                    <span>Contraparte</span>
+                  </button>
+                  <span class="text-slate-300">/</span>
+                  <button type="button" onclick="window.goToStep(3)" id="step-btn-3" class="font-medium text-slate-400 hover:text-slate-600 flex items-center space-x-1.5">
+                    <span class="w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] flex items-center justify-center font-bold">3</span>
+                    <span>Condiciones Clave</span>
+                  </button>
+                </div>
+                <span id="step-percent-text" class="text-[11px] font-semibold text-slate-500">Paso 1 de 3 (33%)</span>
+              </div>
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                <div id="step-progress-bar" class="bg-indigo-600 h-full w-1/3 transition-all duration-300"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de Tipo de Documento (Tarjetas Interactivas) -->
+          <div class="p-4 border-b border-slate-100 bg-white shrink-0">
+            <label class="block text-xs font-semibold text-slate-700 mb-2">1. Selecciona el Tipo de Instrumento Legal:</label>
+            <div class="grid grid-cols-3 gap-2.5">
+              
+              <!-- Tarjeta 1: NDA -->
+              <div onclick="window.selectContractType('nda')" id="type-card-nda" class="p-2.5 rounded-xl border-2 border-indigo-600 bg-indigo-50/40 cursor-pointer transition relative group">
+                <div class="flex items-center justify-between mb-1">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-indigo-600"></i>
+                  <span class="text-[9px] font-bold uppercase text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">NDA</span>
+                </div>
+                <div class="text-xs font-semibold text-slate-900 leading-tight">Confidencialidad</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Mutual o Unilateral</div>
+              </div>
+
+              <!-- Tarjeta 2: Vesting -->
+              <div onclick="window.selectContractType('vesting')" id="type-card-vesting" class="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition relative group">
+                <div class="flex items-center justify-between mb-1">
+                  <i data-lucide="pie-chart" class="w-4 h-4 text-slate-500 group-hover:text-indigo-600"></i>
+                  <span class="text-[9px] font-bold uppercase text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">Equity</span>
+                </div>
+                <div class="text-xs font-semibold text-slate-900 leading-tight">Vesting Founders</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">4 años / 1 año Cliff</div>
+              </div>
+
+              <!-- Tarjeta 3: Servicios Tech -->
+              <div onclick="window.selectContractType('services')" id="type-card-services" class="p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition relative group">
+                <div class="flex items-center justify-between mb-1">
+                  <i data-lucide="code-2" class="w-4 h-4 text-slate-500 group-hover:text-indigo-600"></i>
+                  <span class="text-[9px] font-bold uppercase text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">Tech</span>
+                </div>
+                <div class="text-xs font-semibold text-slate-900 leading-tight">Servicios Tech</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Contractor & Cesión IP</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Área Scrolleable de Pasos del Formulario -->
+          <div class="flex-1 overflow-y-auto p-5 space-y-6">
+
+            <!-- PASO 1: DATOS DE LA STARTUP -->
+            <div id="step-content-1" class="space-y-4 fade-enter fade-enter-active">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="building" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  Paso 1: Datos de tu Startup (Parte Emisora)
+                </h3>
+                <button type="button" class="text-[11px] text-indigo-600 font-medium hover:underline" onclick="window.openStartupProfileModal()">Editar perfil global</button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Razón Social / Denominación Legal</label>
+                  <input type="text" id="input-startup-name" value="Krypton Labs S.A.S." oninput="window.updateField('startupName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Ej. Krypton Labs S.A.S.">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Identificación Fiscal (NIT / RFC / Tax ID)</label>
+                  <input type="text" id="input-startup-taxid" value="901.458.921-3" oninput="window.updateField('startupTaxId', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono transition" placeholder="Ej. 901.458.921-3">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Jurisdicción / Domicilio Principal</label>
+                  <input type="text" id="input-startup-jurisdiction" value="Bogotá D.C., Colombia" oninput="window.updateField('startupJurisdiction', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Ej. Bogotá D.C., Colombia">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Representante Legal</label>
+                  <input type="text" id="input-startup-rep" value="Valeria Gómez Andrade" oninput="window.updateField('startupRep', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Nombre del CEO / Representante">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Documento del Representante (ID / C.C.)</label>
+                  <input type="text" id="input-startup-rep-id" value="C.C. 1.020.845.992" oninput="window.updateField('startupRepId', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono transition" placeholder="C.C. / Pasaporte">
+                </div>
+              </div>
+
+              <div class="pt-3 flex justify-end">
+                <button type="button" onclick="window.goToStep(2)" class="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-lg transition shadow-sm">
+                  <span>Siguiente: Datos de Contraparte</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- PASO 2: DATOS DE LA CONTRAPARTE -->
+            <div id="step-content-2" class="space-y-4 hidden fade-enter">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="user-check" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  Paso 2: Identificación de la Contraparte
+                </h3>
+                <span class="text-[11px] text-slate-400">Persona Natural o Jurídica</span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Nombre Completo o Razón Social</label>
+                  <input type="text" id="input-counterparty-name" value="Mateo Restrepo Cardona" oninput="window.updateField('counterpartyName', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Ej. Mateo Restrepo / Andes Ventures">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Documento / Tax ID Contraparte</label>
+                  <input type="text" id="input-counterparty-id" value="C.C. 1.018.732.140" oninput="window.updateField('counterpartyId', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono transition" placeholder="C.C. / NIT / Pasaporte">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Rol, Cargo o Empresa</label>
+                  <input type="text" id="input-counterparty-role" value="Co-Fundador & Chief Technology Officer (CTO)" oninput="window.updateField('counterpartyRole', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Ej. Senior Fullstack Developer">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Correo Electrónico para Notificaciones Legales</label>
+                  <input type="email" id="input-counterparty-email" value="mateo.restrepo@kryptonlabs.io" oninput="window.updateField('counterpartyEmail', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="notificaciones@dominio.com">
+                </div>
+              </div>
+
+              <div class="pt-3 flex justify-between items-center">
+                <button type="button" onclick="window.goToStep(1)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium px-3 py-2 rounded-lg hover:bg-slate-100 transition">
+                  <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                  <span>Anterior</span>
+                </button>
+
+                <button type="button" onclick="window.goToStep(3)" class="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-lg transition shadow-sm">
+                  <span>Siguiente: Condiciones Clave</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- PASO 3: CONDICIONES CLAVE (LÓGICA CONDICIONAL POR TIPO DE CONTRATO) -->
+            <div id="step-content-3" class="space-y-4 hidden fade-enter">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  Paso 3: Condiciones Clave del Contrato
+                </h3>
+                <span id="step-3-badge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">Parámetros NDA</span>
+              </div>
+
+              <!-- BLOQUE CONDICIONAL A: NDA -->
+              <div id="conditional-fields-nda" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Naturaleza del NDA</label>
+                  <select id="input-nda-modality" onchange="window.updateField('ndaModality', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                    <option value="Bilateral / Mutuo">Bilateral / Mutuo (Ambas partes)</option>
+                    <option value="Unilateral">Unilateral (Solo la Startup revela)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Vigencia de Confidencialidad (Años)</label>
+                  <input type="number" id="input-nda-years" value="5" min="1" max="15" oninput="window.updateField('ndaYears', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Cláusula Penal por Incumplimiento (USD)</label>
+                  <input type="text" id="input-nda-penalty" value="$25,000 USD" oninput="window.updateField('ndaPenalty', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Fecha de Suscripción</label>
+                  <input type="text" id="input-contract-date" value="19 de noviembre de 2026" oninput="window.updateField('contractDate', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Propósito de la Evaluación Confidencial</label>
+                  <input type="text" id="input-nda-purpose" value="Evaluación de arquitectura de software, modelos propietarios de IA y posible alianza estratégica o inversión semilla." oninput="window.updateField('ndaPurpose', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+              </div>
+
+              <!-- BLOQUE CONDICIONAL B: VESTING CO-FUNDADORES -->
+              <div id="conditional-fields-vesting" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 hidden">
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Porcentaje de Equity Asignado (%)</label>
+                  <input type="text" id="input-vesting-equity" value="35.0%" oninput="window.updateField('vestingEquity', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Plazo Total de Vesting (Meses)</label>
+                  <input type="number" id="input-vesting-months" value="48" oninput="window.updateField('vestingMonths', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Período de Carencia / Cliff (Meses)</label>
+                  <input type="number" id="input-vesting-cliff" value="12" oninput="window.updateField('vestingCliff', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Aceleración por Venta / Exit</label>
+                  <select id="input-vesting-acceleration" onchange="window.updateField('vestingAcceleration', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                    <option value="Double-Trigger (100% ante adquisición + despido sin justa causa)">Double-Trigger (100%)</option>
+                    <option value="Single-Trigger (50% inmediato al cierre de adquisición)">Single-Trigger (50%)</option>
+                    <option value="Sin aceleración automática">Sin aceleración</option>
+                  </select>
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Número de Acciones Ordinarias Sujetas a Vesting</label>
+                  <input type="text" id="input-vesting-shares" value="350,000 acciones ordinarias nominativas" oninput="window.updateField('vestingShares', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+              </div>
+
+              <!-- BLOQUE CONDICIONAL C: SERVICIOS TECH (FREELANCE / CONTRACTOR) -->
+              <div id="conditional-fields-services" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 hidden">
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Honorarios Totales / Mensuales</label>
+                  <input type="text" id="input-services-amount" value="$4,500 USD / mes" oninput="window.updateField('servicesAmount', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Duración Estimada del Contrato</label>
+                  <input type="text" id="input-services-duration" value="6 meses renovables" oninput="window.updateField('servicesDuration', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Entregables Técnicos Principales</label>
+                  <input type="text" id="input-services-deliverables" value="Arquitectura backend en microservicios, API REST documentada, integración de pasarela de pagos y despliegue CI/CD en nube." oninput="window.updateField('servicesDeliverables', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-slate-700 mb-1">Régimen de Propiedad Intelectual (IP)</label>
+                  <select id="input-services-ip" onchange="window.updateField('servicesIp', this.value)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                    <option value="Cesión total, exclusiva y mundial de derechos patrimoniales (Work Made for Hire)">Cesión total y exclusiva (Work Made for Hire)</option>
+                    <option value="Licencia perpetua e irrevocable con retención de librerías open-source previas">Licencia perpetua + retención de código previo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="pt-2 flex justify-between items-center">
+                <button type="button" onclick="window.goToStep(2)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium px-3 py-2 rounded-lg hover:bg-slate-100 transition">
+                  <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                  <span>Anterior</span>
+                </button>
+                <span class="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i> Parámetros listos para IA
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- FOOTER FIJO DEL PANEL IZQUIERDO: BOTÓN PRINCIPAL DE GENERACIÓN IA -->
+          <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+            <button type="button" id="btn-generate-ai" onclick="window.generateContractWithAI()" class="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold py-3 px-4 rounded-xl shadow-md shadow-indigo-500/20 transition active:scale-[0.99]">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+              <span id="btn-generate-ai-text">Generar Borrador con IA</span>
+            </button>
+            <div id="ai-progress-status" class="hidden mt-2 text-center">
+              <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                <i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>
+                <span id="ai-progress-message">Analizando jurisdicción y redactando cláusulas...</span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL DERECHO (50%): VISOR EN TIEMPO REAL TIPO HOJA PDF -->
+        <section class="w-full lg:w-1/2 bg-slate-200/75 flex flex-col lg:h-full overflow-hidden relative">
+          
+          <!-- Barra Superior del Visor y Exportación -->
+          <div class="h-12 bg-white/95 backdrop-blur border-b border-slate-200 px-4 flex items-center justify-between shrink-0 z-20 no-print">
+            <div class="flex items-center space-x-2">
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-indigo-600"></i>
+                Vista Previa Legal
+              </span>
+              <span class="text-[11px] text-slate-400 hidden sm:inline">• Formato Carta / A4</span>
+            </div>
+
+            <!-- Botones de Exportación Documental -->
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="window.exportToDOCX()" class="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-300 shadow-xs transition active:scale-95">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-blue-600"></i>
+                <span>Exportar DOCX</span>
+              </button>
+
+              <button type="button" onclick="window.exportToPDF()" class="flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-xs transition active:scale-95">
+                <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>Descargar PDF</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- BARRA FLOTANTE DE ASISTENTE DE AJUSTE RÁPIDO CON IA -->
+          <div class="px-4 pt-3 pb-1 flex justify-center z-20 no-print">
+            <div class="bg-slate-900/95 backdrop-blur-md text-white px-3 py-1.5 rounded-full shadow-floating border border-slate-700/80 flex items-center flex-wrap justify-center gap-1.5 max-w-full">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1 px-1.5">
+                <i data-lucide="zap" class="w-3 h-3"></i> Ajuste IA:
+              </span>
+              
+              <button type="button" onclick="window.applyAIToneAdjustment('strict')" class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 transition active:scale-95">
+                Hacer cláusulas más estrictas
+              </button>
+
+              <button type="button" onclick="window.applyAIToneAdjustment('simple')" class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 transition active:scale-95">
+                Simplificar lenguaje
+              </button>
+
+              <button type="button" onclick="window.applyAIToneAdjustment('arbitration')" class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 transition active:scale-95">
+                Añadir resolución de conflictos
+              </button>
+            </div>
+          </div>
+
+          <!-- ÁREA CENTRAL CON HOJA LEGAL CENTRADA -->
+          <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 flex justify-center items-start">
+            
+            <!-- Skeleton Loader Overlay (visible durante generación IA) -->
+            <div id="document-skeleton" class="hidden w-full max-w-[780px] bg-white rounded-sm shadow-paper p-10 sm:p-14 space-y-5">
+              <div class="h-6 w-2/3 mx-auto rounded ai-shimmer"></div>
+              <div class="h-3 w-1/3 mx-auto rounded ai-shimmer"></div>
+              <div class="pt-6 space-y-3">
+                <div class="h-3 w-full rounded ai-shimmer"></div>
+                <div class="h-3 w-11/12 rounded ai-shimmer"></div>
+                <div class="h-3 w-4/5 rounded ai-shimmer"></div>
+              </div>
+              <div class="pt-4 space-y-3">
+                <div class="h-4 w-1/4 rounded ai-shimmer"></div>
+                <div class="h-3 w-full rounded ai-shimmer"></div>
+                <div class="h-3 w-full rounded ai-shimmer"></div>
+                <div class="h-3 w-5/6 rounded ai-shimmer"></div>
+              </div>
+              <div class="pt-4 space-y-3">
+                <div class="h-4 w-1/3 rounded ai-shimmer"></div>
+                <div class="h-3 w-full rounded ai-shimmer"></div>
+                <div class="h-3 w-10/12 rounded ai-shimmer"></div>
+              </div>
+            </div>
+
+            <!-- HOJA IMPRIMIBLE DEL CONTRATO -->
+            <article id="printable-contract" class="legal-sheet w-full max-w-[780px] bg-white rounded-sm shadow-paper px-8 sm:px-14 py-12 sm:py-16 text-slate-900 font-legal text-[13.5px] border border-slate-200/80">
+              <!-- El contenido dinámico del contrato se inyecta aquí vía JavaScript -->
+            </article>
+
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VISTA 2: MIS CONTRATOS (REPOSITORIO SIMULADO)                  -->
+      <!-- ============================================================== -->
+      <div id="view-contracts" class="hidden flex-1 overflow-y-auto p-6 lg:p-8 bg-slate-100">
+        <div class="max-w-5xl mx-auto space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900 tracking-tight">Bóveda de Contratos y Documentos</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Gestiona borradores activos y contratos finalizados de <span class="font-semibold text-slate-700" id="contracts-startup-subtitle">Krypton Labs S.A.S.</span></p>
+            </div>
+            <button type="button" onclick="window.switchTab('editor')" class="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition self-start">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Crear Nuevo Documento</span>
+            </button>
+          </div>
+
+          <!-- Tabla de Contratos -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th class="py-3 px-4">Documento</th>
+                    <th class="py-3 px-4">Contraparte</th>
+                    <th class="py-3 px-4">Tipo</th>
+                    <th class="py-3 px-4">Versión</th>
+                    <th class="py-3 px-4">Estado</th>
+                    <th class="py-3 px-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="contracts-table-body" class="divide-y divide-slate-100 text-xs">
+                  <!-- Filas inyectadas dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: PERFIL DE MI STARTUP                                    -->
+  <!-- ============================================================== -->
+  <div id="startup-profile-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden fade-enter fade-enter-active">
+      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <i data-lucide="building-2" class="w-4 h-4 text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold">Perfil Corporativo de mi Startup</h3>
+            <p class="text-[11px] text-slate-400">Estos datos precargan automáticamente todos tus contratos</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.closeStartupProfileModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="window.saveStartupProfileModal(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Razón Social</label>
+          <input type="text" id="modal-startup-name" required class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">NIT / Tax ID</label>
+            <input type="text" id="modal-startup-taxid" required class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Jurisdicción</label>
+            <input type="text" id="modal-startup-jurisdiction" required class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Representante Legal</label>
+            <input type="text" id="modal-startup-rep" required class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Documento ID Representante</label>
+            <input type="text" id="modal-startup-rep-id" required class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono">
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+          <button type="button" onclick="window.closeStartupProfileModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-sm transition">
+            Guardar y Sincronizar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- LÓGICA DE APLICACIÓN EN JAVASCRIPT VANILLA                     -->
+  <!-- ============================================================== -->
+  <script>
+    /**
+     * Estado Global Reactivo de VentureLex AI
+     */
+    const appState = {
+      activeTab: 'editor',
+      sidebarCollapsed: false,
+      currentStep: 1,
+      contractType: 'nda', // 'nda' | 'vesting' | 'services'
+      status: 'Borrador',
+      tokensUsed: 420,
+      tokensLimit: 2000,
+      toneModifier: 'standard', // 'standard' | 'strict' | 'simple'
+      includeArbitration: false,
+      currentVersion: 'v1.0',
+      versions: [
+        {
+          id: 'v1.0',
+          label: 'v1.0 - Inicial',
+          toneModifier: 'standard',
+          includeArbitration: false,
+          timestamp: 'Hoy, 17:45'
+        }
+      ],
+      fields: {
+        startupName: 'Krypton Labs S.A.S.',
+        startupTaxId: '901.458.921-3',
+        startupJurisdiction: 'Bogotá D.C., Colombia',
+        startupRep: 'Valeria Gómez Andrade',
+        startupRepId: 'C.C. 1.020.845.992',
+        counterpartyName: 'Mateo Restrepo Cardona',
+        counterpartyId: 'C.C. 1.018.732.140',
+        counterpartyRole: 'Co-Fundador & Chief Technology Officer (CTO)',
+        counterpartyEmail: 'mateo.restrepo@kryptonlabs.io',
+        contractDate: '19 de noviembre de 2026',
+        // Campos específicos NDA
+        ndaModality: 'Bilateral / Mutuo',
+        ndaYears: '5',
+        ndaPenalty: '$25,000 USD',
+        ndaPurpose: 'Evaluación de arquitectura de software, modelos propietarios de IA y posible alianza estratégica o inversión semilla.',
+        // Campos específicos Vesting
+        vestingEquity: '35.0%',
+        vestingMonths: '48',
+        vestingCliff: '12',
+        vestingAcceleration: 'Double-Trigger (100% ante adquisición + despido sin justa causa)',
+        vestingShares: '350,000 acciones ordinarias nominativas',
+        // Campos específicos Servicios Tech
+        servicesAmount: '$4,500 USD / mes',
+        servicesDuration: '6 meses renovables',
+        servicesDeliverables: 'Arquitectura backend en microservicios, API REST documentada, integración de pasarela de pagos y despliegue CI/CD en nube.',
+        servicesIp: 'Cesión total, exclusiva y mundial de derechos patrimoniales (Work Made for Hire)'
+      },
+      savedContracts: [
+        {
+          id: 'DOC-001',
+          title: 'Acuerdo de Confidencialidad (NDA Mutual)',
+          counterparty: 'Andes Seed Capital S.A.S.',
+          type: 'nda',
+          version: 'v1.2',
+          status: 'Finalizado',
+          date: '14 Nov 2026'
+        },
+        {
+          id: 'DOC-002',
+          title: 'Contrato de Vesting Co-Fundador CTO',
+          counterparty: 'Mateo Restrepo Cardona',
+          type: 'vesting',
+          version: 'v1.0',
+          status: 'Borrador',
+          date: '19 Nov 2026'
+        },
+        {
+          id: 'DOC-003',
+          title: 'Contrato de Desarrollo Cloud & API',
+          counterparty: 'Laura Sofía Méndez',
+          type: 'services',
+          version: 'v1.1',
+          status: 'Finalizado',
+          date: '08 Nov 2026'
+        },
+        {
+          id: 'DOC-004',
+          title: 'NDA Evaluación Técnica Proveedor IA',
+          counterparty: 'DataCore Latam Corp.',
+          type: 'nda',
+          version: 'v1.0',
+          status: 'Borrador',
+          date: '02 Nov 2026'
+        }
+      ]
+    };
+
+    /**
+     * Escapa HTML básico para evitar inyección al renderizar valores de inputs
+     */
+    function escapeHTML(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, "'");
+    }
+
+    /**
+     * Genera el HTML del contrato legal según el tipo, campos y modificadores de tono IA
+     */
+    function buildContractHTML(highlightedKey = null) {
+      const f = appState.fields;
+      const isStrict = appState.toneModifier === 'strict';
+      const isSimple = appState.toneModifier === 'simple';
+
+      // Helper para envolver variables dinámicas y destellar cuando cambian
+      const val = (key, fallback = '[Por definir]') => {
+        const raw = f[key] && String(f[key]).trim() !== '' ? escapeHTML(f[key]) : fallback;
+        const flashClass = highlightedKey === key ? 'highlight-flash' : '';
+        return `<span data-field="${key}" class="font-semibold text-slate-950 ${flashClass}">${raw}</span>`;
+      };
+
+      const arbitrationClause = appState.includeArbitration ? `
+        <div class="mt-5 pt-3 border-t border-slate-200/70">
+          <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1.5">
+            CLÁUSULA ADICIONAL — RESOLUCIÓN DE CONFLICTOS Y ARBITRAJE ACELERADO
+          </h4>
+          <p class="text-justify text-slate-800">
+            Toda controversia o diferencia relativa a este contrato se resolverá inicialmente mediante arreglo directo entre las partes durante un término improrrogable de diez (10) días hábiles. Agotada dicha etapa sin acuerdo, la disputa será sometida a decisión definitiva de un Tribunal de Arbitramento institucional con sede en ${val('startupJurisdiction')}, conformado por un (1) árbitro único que fallará en derecho mediante procedimiento abreviado.
+          </p>
+        </div>
+      ` : '';
+
+      // -----------------------------------------------------------
+      // PLANTILLA 1: ACUERDO DE CONFIDENCIALIDAD (NDA)
+      // -----------------------------------------------------------
+      if (appState.contractType === 'nda') {
+        const title = `ACUERDO DE CONFIDENCIALIDAD Y NO DIVULGACIÓN (${escapeHTML(f.ndaModality).toUpperCase()})`;
+
+        const introTone = isSimple
+          ? `Por medio del presente documento, ${val('startupName')} y ${val('counterpartyName')} acuerdan proteger toda información técnica, comercial o financiera que compartan entre sí.`
+          : `Conste por el presente documento privado el <strong>Acuerdo de Confidencialidad y Reserva de Información</strong> que celebran, por una parte, ${val('startupName')}, sociedad legalmente constituida e identificada con ${val('startupTaxId')}, con domicilio principal en ${val('startupJurisdiction')}, representada legalmente por ${val('startupRep')} (${val('startupRepId')}), en adelante la <strong>"PARTE EMISORA"</strong>; y por otra parte, ${val('counterpartyName')}, identificado(a) con ${val('counterpartyId')}, actuando en calidad de ${val('counterpartyRole')}, en adelante la <strong>"PARTE RECEPTORA"</strong>.`;
+
+        const obligationClause = isStrict
+          ? `La PARTE RECEPTORA asume una obligación de resultado de estricta custodia, comprometiéndose a implementar cifrado de grado empresarial, controles de acceso restringido y prohibición absoluta de ingeniería inversa, descompilación o entrenamiento de modelos externos con la Información Confidencial. Cualquier filtración culposa o dolosa facultará la ejecución inmediata de la cláusula penal sin necesidad de requerimiento judicial previo.`
+          : isSimple
+          ? `Quien reciba información confidencial solo podrá usarla para el propósito acordado, deberá guardarla con el mismo cuidado que usa para sus propios secretos y no podrá compartirla con terceros sin permiso por escrito.`
+          : `La PARTE RECEPTORA se obliga a mantener en estricta reserva toda la Información Confidencial revelada en formato oral, escrito, digital o código fuente, absteniéndose de divulgarla a terceros, reproducirla o explotarla comercialmente fuera del alcance autorizado en este instrumento.`;
+
+        return `
+          <div class="text-center border-b-2 border-slate-900 pb-5 mb-7">
+            <div class="text-[10px] font-sans uppercase tracking-[0.2em] text-slate-500 mb-1.5">Instrumento Privado • ${escapeHTML(appState.currentVersion)}</div>
+            <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-950 uppercase">${title}</h2>
+            <p class="text-xs text-slate-600 mt-1">Jurisdicción aplicable: ${val('startupJurisdiction')} • Fecha: ${val('contractDate')}</p>
+          </div>
+
+          <div class="space-y-4 text-justify">
+            <p>${introTone}</p>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">PRIMERA. OBJETO Y PROPÓSITO AUTORIZADO</h4>
+              <p>El presente Acuerdo tiene por objeto establecer los términos y condiciones bajo los cuales las Partes protegerán la Información Confidencial intercambiada exclusivamente para: ${val('ndaPurpose')}.</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">SEGUNDA. ALCANCE DE LA INFORMACIÓN CONFIDENCIAL</h4>
+              <p>Se considerará Información Confidencial todo código fuente, algoritmos, arquitecturas de software, bases de datos, métricas de usuarios, proyecciones financieras, hojas de ruta de producto (<em>roadmap</em>), secretos empresariales y <em>know-how</em> perteneciente a ${val('startupName')}.</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">TERCERA. OBLIGACIONES DE CUSTODIA Y NO DIVULGACIÓN</h4>
+              <p>${obligationClause}</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">CUARTA. VIGENCIA Y SUPERVIVENCIA</h4>
+              <p>Las obligaciones de confidencialidad y no uso establecidas en este Acuerdo permanecerán vigentes durante toda la relación entre las Partes y sobrevivirán por un término adicional de ${val('ndaYears')} años contados a partir de la última revelación de información.</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">QUINTA. CLÁUSULA PENAL Y PERJUICIOS</h4>
+              <p>El incumplimiento comprobado de cualquiera de las obligaciones aquí pactadas dará lugar al pago inmediato, a título de tasación anticipada de perjuicios, de una suma equivalente a ${val('ndaPenalty')}, sin perjuicio de las medidas cautelares e indemnizaciones adicionales que correspondan en derecho.</p>
+            </div>
+
+            ${arbitrationClause}
+          </div>
+
+          ${buildSignatureBlock()}
+        `;
+      }
+
+      // -----------------------------------------------------------
+      // PLANTILLA 2: VESTING PARA CO-FUNDADORES
+      // -----------------------------------------------------------
+      if (appState.contractType === 'vesting') {
+        const strictVesting = isStrict
+          ? `En caso de desvinculación voluntaria o terminación con justa causa antes del cumplimiento del Cliff, el Co-Fundador perderá el 100% de las acciones sujetas a consolidación y ${val('startupName')} ejercerá de pleno derecho la opción de recompra a valor nominal simbólico, junto con cláusula de no competencia por veinticuatro (24) meses.`
+          : isSimple
+          ? `Si el Co-Fundador se retira antes de cumplir los primeros ${val('vestingCliff')} meses (Cliff), no consolidará acciones. Pasado ese primer año, consolidará el 25% y el resto se liberará mes a mes hasta completar ${val('vestingMonths')} meses.`
+          : `Las acciones asignadas estarán sujetas a un esquema de consolidación progresiva (<em>Reverse Vesting</em>) durante un plazo total de ${val('vestingMonths')} meses, sujeto a un período mínimo de permanencia obligatoria (<em>Cliff</em>) de ${val('vestingCliff')} meses contados desde la fecha de suscripción.`;
+
+        return `
+          <div class="text-center border-b-2 border-slate-900 pb-5 mb-7">
+            <div class="text-[10px] font-sans uppercase tracking-[0.2em] text-slate-500 mb-1.5">Acuerdo de Accionistas y Retención • ${escapeHTML(appState.currentVersion)}</div>
+            <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-950 uppercase">CONTRATO DE VESTING DE ACCIONES PARA CO-FUNDADORES</h2>
+            <p class="text-xs text-slate-600 mt-1">Jurisdicción aplicable: ${val('startupJurisdiction')} • Fecha: ${val('contractDate')}</p>
+          </div>
+
+          <div class="space-y-4 text-justify">
+            <p>
+              Entre ${val('startupName')}, sociedad identificada con ${val('startupTaxId')}, domiciliada en ${val('startupJurisdiction')} y representada por ${val('startupRep')} (${val('startupRepId')}), en adelante la <strong>"SOCIEDAD"</strong>; y ${val('counterpartyName')}, identificado(a) con ${val('counterpartyId')}, en calidad de ${val('counterpartyRole')}, en adelante el <strong>"CO-FUNDADOR"</strong>, se celebra el presente Acuerdo de Consolidación Accionaria (Vesting).
+            </p>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">PRIMERA. PARTICIPACIÓN ACCIONARIA SUJETA A VESTING</h4>
+              <p>La SOCIEDAD reconoce y asigna al CO-FUNDADOR un paquete equivalente al ${val('vestingEquity')} del capital suscrito, representado en ${val('vestingShares')}, condicionadas a su dedicación activa y cumplimiento de hitos estratégicos.</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">SEGUNDA. CRONOGRAMA DE CONSOLIDACIÓN Y PERÍODO CLIFF</h4>
+              <p>${strictVesting}</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">TERCERA. ACELERACIÓN POR EVENTO DE LIQUIDEZ (EXIT)</h4>
+              <p>Ante la ocurrencia de un Cambio de Control, fusión o adquisición estratégica de la SOCIEDAD, aplicará el siguiente régimen de aceleración: ${val('vestingAcceleration')}.</p>
+            </div>
+
+            <div>
+              <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">CUARTA. CESIÓN INTEGRAL DE PROPIEDAD INTELECTUAL</h4>
+              <p>El CO-FUNDADOR cede de manera irrevocable, exclusiva y mundial a favor de ${val('startupName')} todos los derechos patrimoniales de autor, patentes, código fuente, marcas y desarrollos concebidos antes o durante su vinculación con el proyecto.</p>
+            </div>
+
+            ${arbitrationClause}
+          </div>
+
+          ${buildSignatureBlock()}
+        `;
+      }
+
+      // -----------------------------------------------------------
+      // PLANTILLA 3: PRESTACIÓN DE SERVICIOS TECH (CONTRACTOR)
+      // -----------------------------------------------------------
+      const ipText = isStrict
+        ? `El CONTRATISTA transfiere de manera automática, irrevocable y sin limitación territorial a ${val('startupName')} la totalidad de los derechos patrimoniales sobre el software desarrollado (${val('servicesIp')}), obligándose a entregar repositorios, credenciales, documentación técnica y llaves criptográficas contra cada desembolso, bajo pena de retención de pagos y multa por mora.`
+        : isSimple
+        ? `Todo el código, diseños y documentación que el CONTRATISTA cree para este proyecto pertenecerán 100% a ${val('startupName')} una vez realizados los pagos acordados (${val('servicesIp')}).`
+        : `En virtud de este contrato, las Partes acuerdan el siguiente régimen de titularidad tecnológica: ${val('servicesIp')}. El CONTRATISTA garantiza que todo el código entregado es original y libre de reclamaciones de terceros.`;
+
+      return `
+        <div class="text-center border-b-2 border-slate-900 pb-5 mb-7">
+          <div class="text-[10px] font-sans uppercase tracking-[0.2em] text-slate-500 mb-1.5">Desarrollo de Software & IP • ${escapeHTML(appState.currentVersion)}</div>
+          <h2 class="text-base sm:text-lg font-bold tracking-tight text-slate-950 uppercase">CONTRATO DE PRESTACIÓN DE SERVICIOS TECNOLÓGICOS</h2>
+          <p class="text-xs text-slate-600 mt-1">Jurisdicción aplicable: ${val('startupJurisdiction')} • Fecha: ${val('contractDate')}</p>
+        </div>
+
+        <div class="space-y-4 text-justify">
+          <p>
+            Comparecen a la celebración del presente Contrato: ${val('startupName')}, identificada con ${val('startupTaxId')}, con domicilio en ${val('startupJurisdiction')}, representada legalmente por ${val('startupRep')} (${val('startupRepId')}), denominada en lo sucesivo el <strong>"CLIENTE"</strong>; y ${val('counterpartyName')}, con identificación ${val('counterpartyId')} y correo de notificaciones ${val('counterpartyEmail')}, actuando como contratista independiente en calidad de ${val('counterpartyRole')}, en adelante el <strong>"CONTRATISTA"</strong>.
+          </p>
+
+          <div>
+            <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">PRIMERA. OBJETO Y ALCANCE DE LOS ENTREGABLES</h4>
+            <p>El CONTRATISTA se obliga con plena autonomía técnica y administrativa a ejecutar a favor del CLIENTE los siguientes entregables tecnológicos: ${val('servicesDeliverables')}.</p>
+          </div>
+
+          <div>
+            <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">SEGUNDA. HONORARIOS Y FORMA DE PAGO</h4>
+            <p>Como contraprestación por los servicios efectivamente entregados y aprobados mediante acta técnica, el CLIENTE pagará al CONTRATISTA la suma de ${val('servicesAmount')}, previa presentación de la cuenta de cobro o factura electrónica correspondiente.</p>
+          </div>
+
+          <div>
+            <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">TERCERA. PLAZO DE EJECUCIÓN</h4>
+            <p>El presente contrato tendrá una duración estimada de ${val('servicesDuration')}, contado a partir de su suscripción, pudiendo prorrogarse de común acuerdo por escrito entre las Partes.</p>
+          </div>
+
+          <div>
+            <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">CUARTA. CESIÓN DE PROPIEDAD INTELECTUAL Y CÓDIGO FUENTE</h4>
+            <p>${ipText}</p>
+          </div>
+
+          <div>
+            <h4 class="font-bold uppercase text-[12px] tracking-wide text-slate-900 mb-1">QUINTA. INDEPENDENCIA LABORAL</h4>
+            <p>El CONTRATISTA actúa como profesional independiente sin subordinación laboral ni exclusividad horaria, asumiendo directamente sus aportes a seguridad social y obligaciones tributarias en su jurisdicción.</p>
+          </div>
+
+          ${arbitrationClause}
+        </div>
+
+        ${buildSignatureBlock()}
+      `;
+    }
+
+    /**
+     * Bloque formal de firmas al pie del documento
+     */
+    function buildSignatureBlock() {
+      const f = appState.fields;
+      return `
+        <div class="mt-12 pt-8 border-t border-slate-300 grid grid-cols-2 gap-8 text-xs">
+          <div>
+            <div class="h-12 border-b border-slate-800 mb-2 flex items-end pb-1 italic text-slate-400 text-[11px]">
+              Firma Digital / Autógrafa
+            </div>
+            <div class="font-bold text-slate-900 uppercase">${escapeHTML(f.startupRep)}</div>
+            <div class="text-slate-600">${escapeHTML(f.startupRepId)}</div>
+            <div class="font-semibold text-slate-800 mt-0.5">Representante Legal • ${escapeHTML(f.startupName)}</div>
+          </div>
+
+          <div>
+            <div class="h-12 border-b border-slate-800 mb-2 flex items-end pb-1 italic text-slate-400 text-[11px]">
+              Firma Digital / Autógrafa
+            </div>
+            <div class="font-bold text-slate-900 uppercase">${escapeHTML(f.counterpartyName)}</div>
+            <div class="text-slate-600">${escapeHTML(f.counterpartyId)}</div>
+            <div class="font-semibold text-slate-800 mt-0.5">${escapeHTML(f.counterpartyRole)}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * Renderiza el documento en el visor derecho y opcionalmente resalta un campo
+     */
+    function renderDocument(highlightedKey = null) {
+      const container = document.getElementById('printable-contract');
+      if (!container) return;
+      container.innerHTML = buildContractHTML(highlightedKey);
+
+      if (highlightedKey) {
+        const targetEl = container.querySelector(`[data-field="${highlightedKey}"]`);
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+
+    /**
+     * Actualiza un campo del estado en tiempo real y dispara el destello visual
+     */
+    window.updateField = function (key, value) {
+      appState.fields[key] = value;
+      renderDocument(key);
+      syncHeaderAndSidebar();
+    };
+
+    /**
+     * Sincroniza textos de cabecera y sidebar con el estado actual
+     */
+    function syncHeaderAndSidebar() {
+      const titleMap = {
+        nda: 'Acuerdo de Confidencialidad (NDA)',
+        vesting: 'Contrato de Vesting Co-Fundadores',
+        services: 'Contrato de Servicios Tech Dev'
+      };
+      document.getElementById('header-doc-title').textContent = titleMap[appState.contractType];
+      document.getElementById('sidebar-startup-name').textContent = appState.fields.startupName || 'Mi Startup';
+      document.getElementById('sidebar-startup-taxid').textContent = `ID: ${appState.fields.startupTaxId || 'N/A'}`;
+      
+      const contractsSubtitle = document.getElementById('contracts-startup-subtitle');
+      if (contractsSubtitle) {
+        contractsSubtitle.textContent = appState.fields.startupName || 'Mi Startup';
+      }
+
+      const pct = Math.min(100, Math.round((appState.tokensUsed / appState.tokensLimit) * 100));
+      document.getElementById('token-progress-bar').style.width = `${pct}%`;
+      document.getElementById('token-counter-text').textContent = `${appState.tokensUsed.toLocaleString()} / ${appState.tokensLimit.toLocaleString()}`;
+    }
+
+    /**
+     * Cambia el tipo de documento (NDA, Vesting o Servicios Tech)
+     */
+    window.selectContractType = function (type) {
+      appState.contractType = type;
+      window.switchTab('editor');
+
+      ['nda', 'vesting', 'services'].forEach((t) => {
+        const card = document.getElementById(`type-card-${t}`);
+        const pill = document.getElementById(`tab-pill-${t}`);
+        const condBlock = document.getElementById(`conditional-fields-${t}`);
+
+        if (t === type) {
+          card.className = 'p-2.5 rounded-xl border-2 border-indigo-600 bg-indigo-50/40 cursor-pointer transition relative group';
+          pill.className = 'w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs text-white font-medium bg-slate-800 border-l-2 border-indigo-500 transition';
+          if (condBlock) condBlock.classList.remove('hidden');
+        } else {
+          card.className = 'p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 cursor-pointer transition relative group';
+          pill.className = 'w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs text-slate-400 hover:bg-slate-800/60 transition';
+          if (condBlock) condBlock.classList.add('hidden');
+        }
+      });
+
+      const badgeMap = {
+        nda: 'Parámetros NDA',
+        vesting: 'Parámetros Equity & Cliff',
+        services: 'Parámetros Tech & IP'
+      };
+      document.getElementById('step-3-badge').textContent = badgeMap[type];
+
+      syncHeaderAndSidebar();
+      renderDocument();
+      showToast(`Plantilla cambiada a ${badgeMap[type].replace('Parámetros ', '')}`, 'info');
+    };
+
+    /**
+     * Navegación entre pasos del Stepper (1, 2, 3)
+     */
+    window.goToStep = function (step) {
+      appState.currentStep = step;
+
+      [1, 2, 3].forEach((s) => {
+        const content = document.getElementById(`step-content-${s}`);
+        const btn = document.getElementById(`step-btn-${s}`);
+        const circle = btn.querySelector('span:first-child');
+
+        if (s === step) {
+          content.classList.remove('hidden');
+          content.classList.remove('fade-enter-active');
+          void content.offsetWidth;
+          content.classList.add('fade-enter-active');
+
+          btn.className = 'font-semibold text-indigo-600 flex items-center space-x-1.5';
+          circle.className = 'w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center font-bold';
+        } else {
+          content.classList.add('hidden');
+          btn.className = s < step
+            ? 'font-medium text-emerald-600 hover:text-emerald-700 flex items-center space-x-1.5'
+            : 'font-medium text-slate-400 hover:text-slate-600 flex items-center space-x-1.5';
+          circle.className = s < step
+            ? 'w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 text-[10px] flex items-center justify-center font-bold'
+            : 'w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] flex items-center justify-center font-bold';
+        }
+      });
+
+      const progressMap = { 1: '33%', 2: '66%', 3: '100%' };
+      document.getElementById('step-progress-bar').style.width = progressMap[step];
+      document.getElementById('step-percent-text').textContent = `Paso ${step} de 3 (${progressMap[step]})`;
+    };
+
+    /**
+     * Botón "Cargar datos demo": rellena rápidamente escenarios realistas según el contrato
+     */
+    window.loadDemoData = function () {
+      const demos = {
+        nda: {
+          startupName: 'NovaPulse AI S.A.S.',
+          startupTaxId: '901.784.312-9',
+          startupJurisdiction: 'Bogotá D.C., Colombia',
+          startupRep: 'Camila Torres Salazar',
+          startupRepId: 'C.C. 1.032.490.811',
+          counterpartyName: 'Sequoia Latam Scout Fund LLC',
+          counterpartyId: 'EIN 88-4192034',
+          counterpartyRole: 'Fondo de Inversión Venture Capital',
+          counterpartyEmail: 'deals@sequoialatam-demo.vc',
+          ndaModality: 'Bilateral / Mutuo',
+          ndaYears: '5',
+          ndaPenalty: '$50,000 USD',
+          ndaPurpose: 'Due Diligence técnico y financiero previo a ronda Pre-Seed por $650,000 USD.'
+        },
+        vesting: {
+          startupName: 'NovaPulse AI S.A.S.',
+          startupTaxId: '901.784.312-9',
+          startupJurisdiction: 'Bogotá D.C., Colombia',
+          startupRep: 'Camila Torres Salazar',
+          startupRepId: 'C.C. 1.032.490.811',
+          counterpartyName: 'Sebastián Mejía Pardo',
+          counterpartyId: 'C.C. 1.015.442.890',
+          counterpartyRole: 'Co-Fundador & VP of Engineering',
+          counterpartyEmail: 'sebastian@novapulse.ai',
+          vestingEquity: '40.0%',
+          vestingMonths: '48',
+          vestingCliff: '12',
+          vestingAcceleration: 'Double-Trigger (100% ante adquisición + despido sin justa causa)',
+          vestingShares: '400,000 acciones ordinarias nominativas'
+        },
+        services: {
+          startupName: 'NovaPulse AI S.A.S.',
+          startupTaxId: '901.784.312-9',
+          startupJurisdiction: 'Bogotá D.C., Colombia',
+          startupRep: 'Camila Torres Salazar',
+          startupRepId: 'C.C. 1.032.490.811',
+          counterpartyName: 'Daniela Ríos Quintero',
+          counterpartyId: 'C.C. 1.026.589.301',
+          counterpartyRole: 'Lead AI & Fullstack Engineer (Contractor)',
+          counterpartyEmail: 'daniela.rios@cloudbuilders.dev',
+          servicesAmount: '$5,200 USD / mes',
+          servicesDuration: '4 meses con renovación automática',
+          servicesDeliverables: 'Pipeline RAG con embeddings vectoriales, API Gateway seguro y dashboard analítico en tiempo real.',
+          servicesIp: 'Cesión total, exclusiva y mundial de derechos patrimoniales (Work Made for Hire)'
+        }
+      };
+
+      const selectedDemo = demos[appState.contractType];
+      Object.assign(appState.fields, selectedDemo);
+
+      const inputMap = {
+        startupName: 'input-startup-name',
+        startupTaxId: 'input-startup-taxid',
+        startupJurisdiction: 'input-startup-jurisdiction',
+        startupRep: 'input-startup-rep',
+        startupRepId: 'input-startup-rep-id',
+        counterpartyName: 'input-counterparty-name',
+        counterpartyId: 'input-counterparty-id',
+        counterpartyRole: 'input-counterparty-role',
+        counterpartyEmail: 'input-counterparty-email',
+        ndaModality: 'input-nda-modality',
+        ndaYears: 'input-nda-years',
+        ndaPenalty: 'input-nda-penalty',
+        ndaPurpose: 'input-nda-purpose',
+        vestingEquity: 'input-vesting-equity',
+        vestingMonths: 'input-vesting-months',
+        vestingCliff: 'input-vesting-cliff',
+        vestingAcceleration: 'input-vesting-acceleration',
+        vestingShares: 'input-vesting-shares',
+        servicesAmount: 'input-services-amount',
+        servicesDuration: 'input-services-duration',
+        servicesDeliverables: 'input-services-deliverables',
+        servicesIp: 'input-services-ip'
+      };
+
+      Object.entries(inputMap).forEach(([fieldKey, domId]) => {
+        const el = document.getElementById(domId);
+        if (el && appState.fields[fieldKey] !== undefined) {
+          el.value = appState.fields[fieldKey];
+        }
+      });
+
+      syncHeaderAndSidebar();
+      renderDocument('counterpartyName');
+      showToast('Datos demo cargados y sincronizados en el contrato', 'success');
+    };
+
+    /**
+     * Simula generación completa con IA (Skeleton loader + etapas de análisis + nueva versión)
+     */
+    window.generateContractWithAI = function () {
+      const btn = document.getElementById('btn-generate-ai');
+      const btnText = document.getElementById('btn-generate-ai-text');
+      const statusBox = document.getElementById('ai-progress-status');
+      const statusMsg = document.getElementById('ai-progress-message');
+      const skeleton = document.getElementById('document-skeleton');
+      const sheet = document.getElementById('printable-contract');
+
+      btn.disabled = true;
+      btn.classList.add('opacity-75', 'cursor-not-allowed');
+      btnText.textContent = 'Generando con Motor Legal IA...';
+      statusBox.classList.remove('hidden');
+      skeleton.classList.remove('hidden');
+      sheet.classList.add('hidden');
+
+      const stages = [
+        `Analizando jurisdicción (${appState.fields.startupJurisdiction})...`,
+        'Redactando cláusulas de propiedad intelectual y blindaje...',
+        'Verificando coherencia de términos y firmas...'
+      ];
+
+      let stepIdx = 0;
+      statusMsg.textContent = stages[0];
+
+      const interval = setInterval(() => {
+        stepIdx++;
+        if (stepIdx < stages.length) {
+          statusMsg.textContent = stages[stepIdx];
+        }
+      }, 650);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btnText.textContent = 'Generar Borrador con IA';
+        statusBox.classList.add('hidden');
+        skeleton.classList.add('hidden');
+        sheet.classList.remove('hidden');
+
+        appState.tokensUsed = Math.min(appState.tokensLimit, appState.tokensUsed + 145);
+        createNewVersion('Generación IA completa');
+        syncHeaderAndSidebar();
+        renderDocument();
+
+        const heading = sheet.querySelector('h2');
+        if (heading) {
+          heading.classList.add('ai-cursor');
+          setTimeout(() => heading.classList.remove('ai-cursor'), 1400);
+        }
+
+        showToast('Borrador legal redactado por VentureLex AI (+145 tokens)', 'success');
+      }, 2000);
+    };
+
+    /**
+     * Barra flotante de Ajuste Rápido con IA
+     */
+    window.applyAIToneAdjustment = function (action) {
+      const sheet = document.getElementById('printable-contract');
+      sheet.style.opacity = '0.45';
+
+      setTimeout(() => {
+        let versionNote = '';
+        if (action === 'strict') {
+          appState.toneModifier = 'strict';
+          versionNote = 'Cláusulas estrictas';
+          showToast('Tono ajustado: Blindaje jurídico estricto aplicado', 'success');
+        } else if (action === 'simple') {
+          appState.toneModifier = 'simple';
+          versionNote = 'Lenguaje simplificado';
+          showToast('Tono ajustado: Redacción clara y directa (Plain Legal)', 'success');
+        } else if (action === 'arbitration') {
+          appState.includeArbitration = !appState.includeArbitration;
+          versionNote = appState.includeArbitration ? 'Con cláusula arbitral' : 'Sin cláusula arbitral';
+          showToast(
+            appState.includeArbitration
+              ? 'Cláusula de Arbitraje Acelerado añadida al contrato'
+              : 'Cláusula de Arbitraje removida',
+            'info'
+          );
+        }
+
+        appState.tokensUsed = Math.min(appState.tokensLimit, appState.tokensUsed + 65);
+        createNewVersion(versionNote);
+        syncHeaderAndSidebar();
+        renderDocument();
+        sheet.style.opacity = '1';
+      }, 380);
+    };
+
+    /**
+     * Crea una nueva entrada en el selector de historial de versiones
+     */
+    function createNewVersion(description) {
+      const nextMinor = appState.versions.length;
+      const versionId = `v1.${nextMinor}`;
+      appState.currentVersion = versionId;
+
+      appState.versions.push({
+        id: versionId,
+        label: `${versionId} - ${description}`,
+        toneModifier: appState.toneModifier,
+        includeArbitration: appState.includeArbitration,
+        timestamp: 'Justo ahora'
+      });
+
+      const select = document.getElementById('version-select');
+      const option = document.createElement('option');
+      option.value = versionId;
+      option.className = 'bg-slate-900 text-slate-200';
+      option.textContent = `${versionId} - ${description}`;
+      select.appendChild(option);
+      select.value = versionId;
+
+      updateStatusBadge();
+    }
+
+    /**
+     * Cambia entre versiones guardadas en el historial
+     */
+    window.switchVersion = function (versionId) {
+      const found = appState.versions.find((v) => v.id === versionId);
+      if (!found) return;
+
+      appState.currentVersion = found.id;
+      appState.toneModifier = found.toneModifier;
+      appState.includeArbitration = found.includeArbitration;
+
+      updateStatusBadge();
+      renderDocument();
+      showToast(`Visualizando versión ${found.label}`, 'info');
+    };
+
+    /**
+     * Actualiza la insignia de estado en el header (Borrador vs Finalizado)
+     */
+    function updateStatusBadge() {
+      const badge = document.getElementById('header-status-badge');
+      if (appState.status === 'Finalizado') {
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-emerald-400"></span>Finalizado (${appState.currentVersion})`;
+      } else {
+        badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20';
+        badge.innerHTML = `<span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-amber-400 animate-pulse"></span>Borrador ${appState.currentVersion}`;
+      }
+    }
+
+    /**
+     * Guarda el documento actual en la lista simulada "Mis Contratos"
+     */
+    window.quickSaveDocument = function () {
+      const titleMap = {
+        nda: `NDA (${appState.fields.ndaModality})`,
+        vesting: 'Contrato de Vesting Co-Fundadores',
+        services: 'Contrato de Servicios Tech Dev'
+      };
+
+      appState.savedContracts.unshift({
+        id: `DOC-00${appState.savedContracts.length + 1}`,
+        title: titleMap[appState.contractType],
+        counterparty: appState.fields.counterpartyName,
+        type: appState.contractType,
+        version: appState.currentVersion,
+        status: appState.status,
+        date: '19 Nov 2026'
+      });
+
+      document.getElementById('contracts-counter-badge').textContent = appState.savedContracts.length;
+      renderContractsTable();
+      showToast('Borrador guardado en Mis Contratos', 'success');
+    };
+
+    /**
+     * Marca el documento como Finalizado
+     */
+    window.markAsFinalized = function () {
+      appState.status = 'Finalizado';
+      updateStatusBadge();
+      window.quickSaveDocument();
+      showToast('Documento marcado como Finalizado y listo para firma', 'success');
+    };
+
+    /**
+     * Exporta el contrato a PDF usando html2pdf.js (con fallback a window.print)
+     */
+    window.exportToPDF = function () {
+      const element = document.getElementById('printable-contract');
+      const filename = `VentureLex_${appState.contractType.toUpperCase()}_${appState.fields.startupName.replace(/\s+/g, '_')}.pdf`;
+
+      showToast('Generando archivo PDF de alta resolución...', 'info');
+
+      if (typeof html2pdf !== 'undefined') {
+        const opt = {
+          margin: [12, 12, 12, 12],
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf()
+          .set(opt)
+          .from(element)
+          .save()
+          .then(() => {
+            showToast(`PDF descargado: ${filename}`, 'success');
+          })
+          .catch(() => {
+            window.print();
+          });
+      } else {
+        window.print();
+      }
+    };
+
+    /**
+     * Exporta el contrato a un archivo .doc compatible con Microsoft Word mediante Blob
+     * Nota: Las etiquetas de cierre HTML están escapadas con \/ para no interferir con el parser del navegador
+     */
+    window.exportToDOCX = function () {
+      const content = document.getElementById('printable-contract').innerHTML;
+      const htmlDoc = [
+        "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>",
+        "<head><meta charset='utf-8'><title>Contrato VentureLex AI<\/title>",
+        "<style>body{font-family:Georgia,serif;font-size:11pt;line-height:1.6;color:#111827;}h2{text-align:center;font-size:14pt;text-transform:uppercase;}h4{font-size:11pt;text-transform:uppercase;margin-top:14pt;}p{text-align:justify;}<\/style>",
+        "<\/head><body>",
+        content,
+        "<\/body><\/html>"
+      ].join('');
+
+      const blob = new Blob(['\ufeff', htmlDoc], {
+        type: 'application/msword;charset=utf-8'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const filename = `VentureLex_${appState.contractType.toUpperCase()}_${appState.fields.startupName.replace(/\s+/g, '_')}.doc`;
+
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`Archivo Word descargado: ${filename}`, 'success');
+    };
+
+    /**
+     * Alterna entre pestañas principales ('editor' vs 'contracts')
+     */
+    window.switchTab = function (tab) {
+      appState.activeTab = tab;
+      const viewEditor = document.getElementById('view-editor');
+      const viewContracts = document.getElementById('view-contracts');
+      const navEditor = document.getElementById('nav-editor');
+      const navContracts = document.getElementById('nav-contracts');
+
+      if (tab === 'editor') {
+        viewEditor.classList.remove('hidden');
+        viewContracts.classList.add('hidden');
+        navEditor.className = 'w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 transition';
+        navContracts.className = 'w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition';
+      } else {
+        viewEditor.classList.add('hidden');
+        viewContracts.classList.remove('hidden');
+        navContracts.className = 'w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 transition';
+        navEditor.className = 'w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition';
+        renderContractsTable();
+      }
+    };
+
+    /**
+     * Renderiza la tabla de Mis Contratos
+     */
+    function renderContractsTable() {
+      const tbody = document.getElementById('contracts-table-body');
+      if (!tbody) return;
+
+      tbody.innerHTML = appState.savedContracts
+        .map((doc) => {
+          const isFinal = doc.status === 'Finalizado';
+          const statusHTML = isFinal
+            ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Finalizado</span>`
+            : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Borrador</span>`;
+
+          return `
+            <tr class="hover:bg-slate-50/80 transition">
+              <td class="py-3.5 px-4 font-semibold text-slate-900">${escapeHTML(doc.title)}</td>
+              <td class="py-3.5 px-4 text-slate-600">${escapeHTML(doc.counterparty)}</td>
+              <td class="py-3.5 px-4 uppercase font-mono text-[11px] text-slate-500">${escapeHTML(doc.type)}</td>
+              <td class="py-3.5 px-4 font-mono text-[11px] text-indigo-600 font-medium">${escapeHTML(doc.version)}</td>
+              <td class="py-3.5 px-4">${statusHTML}</td>
+              <td class="py-3.5 px-4 text-right">
+                <button type="button" onclick="window.openContractFromList('${escapeHTML(doc.type)}', '${escapeHTML(doc.counterparty)}')" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs hover:underline">
+                  Abrir en editor →
+                </button>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    /**
+     * Abre un documento desde la tabla "Mis Contratos" directamente en el editor
+     */
+    window.openContractFromList = function (type, counterparty) {
+      appState.fields.counterpartyName = counterparty;
+      document.getElementById('input-counterparty-name').value = counterparty;
+      window.selectContractType(type);
+      showToast(`Contrato con ${counterparty} cargado en el editor`, 'info');
+    };
+
+    /**
+     * Modal Perfil de mi Startup: Abrir, Cerrar y Guardar
+     */
+    window.openStartupProfileModal = function () {
+      document.getElementById('modal-startup-name').value = appState.fields.startupName;
+      document.getElementById('modal-startup-taxid').value = appState.fields.startupTaxId;
+      document.getElementById('modal-startup-jurisdiction').value = appState.fields.startupJurisdiction;
+      document.getElementById('modal-startup-rep').value = appState.fields.startupRep;
+      document.getElementById('modal-startup-rep-id').value = appState.fields.startupRepId;
+      document.getElementById('startup-profile-modal').classList.remove('hidden');
+    };
+
+    window.closeStartupProfileModal = function () {
+      document.getElementById('startup-profile-modal').classList.add('hidden');
+    };
+
+    window.saveStartupProfileModal = function (e) {
+      e.preventDefault();
+      appState.fields.startupName = document.getElementById('modal-startup-name').value;
+      appState.fields.startupTaxId = document.getElementById('modal-startup-taxid').value;
+      appState.fields.startupJurisdiction = document.getElementById('modal-startup-jurisdiction').value;
+      appState.fields.startupRep = document.getElementById('modal-startup-rep').value;
+      appState.fields.startupRepId = document.getElementById('modal-startup-rep-id').value;
+
+      document.getElementById('input-startup-name').value = appState.fields.startupName;
+      document.getElementById('input-startup-taxid').value = appState.fields.startupTaxId;
+      document.getElementById('input-startup-jurisdiction').value = appState.fields.startupJurisdiction;
+      document.getElementById('input-startup-rep').value = appState.fields.startupRep;
+      document.getElementById('input-startup-rep-id').value = appState.fields.startupRepId;
+
+      window.closeStartupProfileModal();
+      syncHeaderAndSidebar();
+      renderDocument('startupName');
+      showToast('Perfil corporativo actualizado en todos los documentos', 'success');
+    };
+
+    /**
+     * Colapsar / Expandir el sidebar izquierdo
+     */
+    window.toggleSidebar = function () {
+      const sidebar = document.getElementById('main-sidebar');
+      const labels = sidebar.querySelectorAll('.sidebar-label');
+      appState.sidebarCollapsed = !appState.sidebarCollapsed;
+
+      if (appState.sidebarCollapsed) {
+        sidebar.classList.remove('w-60');
+        sidebar.classList.add('w-16');
+        labels.forEach((el) => el.classList.add('hidden'));
+      } else {
+        sidebar.classList.remove('w-16');
+        sidebar.classList.add('w-60');
+        labels.forEach((el) => el.classList.remove('hidden'));
+      }
+    };
+
+    /**
+     * Sistema de notificaciones Toast flotantes
+     */
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      const colors = {
+        success: 'bg-slate-900 border-emerald-500/50 text-white',
+        info: 'bg-slate-900 border-indigo-500/50 text-white'
+      };
+
+      const dotColor = type === 'success' ? 'bg-emerald-400' : 'bg-indigo-400';
+
+      toast.className = `pointer-events-auto flex items-center space-x-2.5 px-4 py-2.5 rounded-xl border shadow-floating text-xs font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${dotColor} shrink-0"></span>
+        <span>${escapeHTML(message)}</span>
+      `;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    /**
+     * Inicialización al cargar el DOM
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+      syncHeaderAndSidebar();
+      renderDocument();
+      renderContractsTable();
+    });
+  </script>
+</body>
+</html>
