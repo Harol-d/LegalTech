@@ -31,7 +31,7 @@ export class AiGatewayError extends Error {
  * Puerta de entrada HTTP a la capa de IA del servidor SSR (`/api/ai/*`).
  *
  * Único punto del cliente que conoce las rutas de IA: los componentes nunca
- * llaman a Google directamente y la clave `key-Model` permanece en el servidor.
+ * llaman a Google directamente y la clave `model` permanece en el servidor.
  */
 @Injectable({ providedIn: 'root' })
 export class AiGatewayService {

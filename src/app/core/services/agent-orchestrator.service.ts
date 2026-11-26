@@ -37,7 +37,7 @@ export interface DocumentDraftResult {
  * - Persiste los datos maestros de la startup en memoria (servicio) para
  *   reutilizarlos al generar múltiples documentos en la misma sesión.
  *
- * Resiliencia: si la IA no está configurada (sin `key-Model`), se generan
+ * Resiliencia: si la IA no está configurada (sin `model`), se generan
  * borradores locales. Los errores de una solicitud real se propagan para que
  * la UI pueda informar al usuario y permitirle reintentar.
  */
@@ -333,7 +333,7 @@ function buildMockedDraft(definition: LegalSectionDefinition, template: Document
     : '<p><em>[Agregar socios en el Paso 1.]</em></p>';
 
   const intro = `<h3>${title}</h3>`;
-  const draftNote = `<p><em>[Borrador de demostración generado localmente (sin conexión a la IA). Configure la variable key-Model en el archivo .env para usar Google Gemini con RAG. Requiere revisión humana y validación por un abogado.]</em></p>`;
+  const draftNote = `<p><em>[Borrador de demostración generado localmente (sin conexión a la IA). Configure la variable model en el archivo .env para usar Google Gemini con RAG. Requiere revisión humana y validación por un abogado.]</em></p>`;
 
   const body = renderSectionBody(definition, template, company, ctx, partnerRows);
 

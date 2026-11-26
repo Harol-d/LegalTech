@@ -30,12 +30,12 @@ export class FileSearchService {
   /** Store activo para RAG (nombre completo `fileSearchStores/...`). */
   private activeStoreName: string | null = null;
 
-  /** Clave `key-Model`. */
+  /** Clave `model`. */
   private get apiKey(): string {
     return this.ai.apiKey;
   }
 
-  /** ¿RAG disponible? (clave `key-Model` + store activo). */
+  /** ¿RAG disponible? (clave `model` + store activo). */
   hasRagStore(): boolean {
     return this.activeStoreName !== null && this.apiKey.length > 0;
   }
@@ -137,6 +137,6 @@ export class FileSearchService {
   }
 }
 
-// Re-exportar el entorno para consumidores que necesiten la clave `key-Model`.
-export const KEY_MODEL_ENV_NAME = 'key-Model' as const;
+// Re-exportar el nombre de la variable para consumidores que la necesiten.
+export const MODEL_ENV_NAME = 'model' as const;
 export const keyModelConfigured = (): boolean => Boolean(environment.keyModel?.trim());

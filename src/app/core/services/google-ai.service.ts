@@ -18,7 +18,7 @@ export interface GoogleGenerateOptions {
   fileSearchStoreNames?: string[];
   /** Número máximo de resultados RAG por store. */
   fileSearchMaxResults?: number;
-  /** Clave de API (si no se indica, usa `environment.keyModel` / `key-Model`). */
+  /** Clave de API (si no se indica, usa `environment.keyModel` / `model`). */
   apiKey?: string;
 }
 
@@ -32,21 +32,21 @@ interface GenerateContentResponse {
  *
  * Todas las funciones de IA de la aplicación pasan por esta capa; ningún
  * componente llama al modelo directamente. Devuelve `Observable<T>` (RxJS)
- * y lee la clave de API `key-Model` desde `.env` -> `environment.keyModel`.
+ * y lee la clave de API `model` desde `.env` -> `environment.keyModel`.
  */
 @Injectable({ providedIn: 'root' })
 export class GoogleAiService {
   /** Modelo utilizado. Únicamente Google. */
   readonly model = GOOGLE_AI_MODEL;
 
-  /** Clave `key-Model` (nombre exacto solicitado en `.env`). */
+  /** Clave `model` (nombre exacto solicitado en `.env`). */
   get apiKey(): string {
     const fromProcess =
-      typeof process !== 'undefined' ? (process.env?.['key-Model'] ?? process.env?.['KEY_MODEL'] ?? '') : '';
+      typeof process !== 'undefined' ? (process.env?.['model'] ?? '') : '';
     return (environment.keyModel || fromProcess || '').trim();
   }
 
-  /** ¿Hay clave `key-Model` configurada para llamar al modelo Google? */
+  /** ¿Hay clave `model` configurada para llamar al modelo Google? */
   hasApiKey(): boolean {
     return this.apiKey.length > 0;
   }
@@ -66,7 +66,7 @@ export class GoogleAiService {
   private generateContent(prompt: string, options: GoogleGenerateOptions): Observable<string[]> {
     const apiKey = (options.apiKey ?? this.apiKey).trim();
     if (!apiKey) {
-      return throwError(() => new Error('key-Model no configurada: define key-Model en .env / environment.keyModel.'));
+      return throwError(() => new Error('model no configurada: define model en .env / environment.keyModel.'));
     }
 
     const body: Record<string, unknown> = {

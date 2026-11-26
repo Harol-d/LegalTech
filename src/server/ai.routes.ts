@@ -70,7 +70,7 @@ interface GeneratedSection {
 
 /**
  * Router `/api/ai`: única puerta de entrada a Google Gemini.
- * La clave (`key-Model`) nunca sale del servidor.
+ * La clave (`model`) nunca sale del servidor.
  */
 export function createAiRouter(): Router {
   const router = Router();
@@ -99,7 +99,7 @@ export function createAiRouter(): Router {
         availableModels,
         message: enabled
           ? 'IA de Google habilitada.'
-          : 'Configure la variable key-Model en el archivo .env para habilitar la IA real. Se usarán borradores de demostración.',
+          : 'Configure la variable model en el archivo .env para habilitar la IA real. Se usarán borradores de demostración.',
       });
     }),
   );
@@ -308,7 +308,7 @@ function sendError(res: Response, error: unknown): void {
   res.status(502).json({
     error: 'AI_ERROR',
     message:
-      'El modelo de Google no pudo completar la solicitud. Intente nuevamente o revise la clave key-Model.',
+      'El modelo de Google no pudo completar la solicitud. Intente nuevamente o revise la clave model.',
   });
 }
 

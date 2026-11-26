@@ -140,7 +140,7 @@ El componente `wizard-workspace` debe implementar un `p-stepper` lineal de 3 pas
 - `DocumentCatalogService` (`document-catalog.service.ts`): `getTemplates(): Observable<DocumentTemplate[]>`, `getTemplateById(id): Observable<DocumentTemplate|undefined>`, `getTemplatesByCategory(): Observable<TemplateCategoryGroup[]>`, `getTemplatesInCategory(...)`, `getCategories()`. Tipado estricto + `delay(MOCK_NETWORK_LATENCY_MS=600)`. Mocked; sin `HttpClient` a URLs inexistentes.
 
 ### 7.4 `AgentOrchestratorService` (`agent-orchestrator.service.ts`)
-> **Actualizado en §7.10:** los borradores y la auditoría ahora se delegan a Google Gemini (con RAG); lo aquí descrito se conserva como **modo de respaldo local** cuando no hay `key-Model` o falla la red.
+> **Actualizado en §7.10:** los borradores y la auditoría ahora se delegan a Google Gemini (con RAG); lo aquí descrito se conserva como **modo de respaldo local** cuando no hay `model` o falla la red.
 - Estado en memoria: `startupContext` (signal) + `setStartupContext/getStartupContext/clearStartupContext` (**persistir datos maestros para reutilizar en varios documentos en la sesión**).
 - `generateSectionDraft(def, template, ctx): Observable<DocumentSection>` (**Agente Redactor Legal**).
 - `regenerateSection(section, instruction, template, ctx): Observable<DocumentSection>` (HITL; vuelve a `DRAFT_READY`, re-aprobación; anota instrucción).
@@ -181,7 +181,7 @@ El componente `wizard-workspace` debe implementar un `p-stepper` lineal de 3 pas
 
 > Fecha: 2026-11-26. Sustituye los borradores simulados de `AgentOrchestratorService` por llamadas reales a Google, manteniendo el fallback local.
 
-**Regla de seguridad:** la clave `key-Model` vive **solo** en el servidor SSR. El navegador nunca habla con Google; los servicios Angular consumen `/api/ai/*`.
+**Regla de seguridad:** la clave `model` vive **solo** en el servidor SSR. El navegador nunca habla con Google; los servicios Angular consumen `/api/ai/*`.
 
 ```text
 Componentes → core/services (AiGatewayService, AgentOrchestratorService)
@@ -192,7 +192,7 @@ Componentes → core/services (AiGatewayService, AgentOrchestratorService)
 **Dependencias:** `@google/genai` 3.6.1 (solo servidor; `externalDependencies` en `angular.json`), Node ≥22 (probado en 26). PrimeNG/Angular sin cambios.
 
 **Variables de entorno (`.env` en la raíz, nunca versionado):**
-- `key-Model` — clave de Google AI Studio (vacía = modo demostración local).
+- `model` — clave de Google AI Studio (vacía = modo demostración local).
 - `GEMINI_MODEL` — opcional, por defecto `gemini-2.5-flash`; si el modelo está saturado (503), no existe (404) o agota cuota (429), el servidor prueba respaldos (`gemini-2.5-flash-lite`, `gemini-flash-latest`) sin tocar la UI.
 - `FILE_SEARCH_STORE_NAME` — opcional; si se omite, el store se crea/reutiliza automáticamente.
 

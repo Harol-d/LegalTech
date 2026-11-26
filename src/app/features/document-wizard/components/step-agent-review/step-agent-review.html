@@ -29,7 +29,7 @@
       @if (isLocalFallback()) {
         <p-message severity="warn" size="small" class="mb-3">
           Modo demostración: no se pudo usar Google Gemini.
-          {{ aiMessage() ?? 'Configure la variable key-Model en el archivo .env.' }}
+          {{ aiMessage() ?? 'Configure la variable model en el archivo .env.' }}
         </p-message>
       }
 

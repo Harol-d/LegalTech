@@ -23,7 +23,7 @@ La redacción de cláusulas, la regeneración y la auditoría usan **solo modelo
    ```
 
    ```dotenv
-   key-Model=SU_CLAVE_DE_GOOGLE_AI_STUDIO
+   model=SU_CLAVE_DE_GOOGLE_AI_STUDIO
    # GEMINI_MODEL=gemini-2.5-flash        # opcional
    # FILE_SEARCH_STORE_NAME=              # opcional (se crea automáticamente)
    ```
@@ -32,7 +32,7 @@ La redacción de cláusulas, la regeneración y la auditoría usan **solo modelo
 
 2. Arranque la aplicación (`ng serve` o `npm run build && npm run serve:ssr:legal`). El servidor indexa el corpus legal (las 9 plantillas + archivos `knowledge/*.md|*.txt`) en un *File Search Store* de Google la primera vez.
 
-3. Si `key-Model` está vacía, la aplicación usa **modo demostración local** con borradores simulados. Si una solicitud real de Gemini falla (por ejemplo, por límite de cuota), el Paso 2 muestra el error y permite volver a intentar; no sustituye silenciosamente la respuesta por un borrador local.
+3. Si `model` está vacía, la aplicación usa **modo demostración local** con borradores simulados. Si una solicitud real de Gemini falla (por ejemplo, por límite de cuota), el Paso 2 muestra el error y permite volver a intentar; no sustituye silenciosamente la respuesta por un borrador local.
 
 Endpoints internos (servidor SSR): `GET /api/ai/status`, `POST /api/ai/knowledge-base/index`, `POST /api/ai/draft-document`, `POST /api/ai/draft-section`, `POST /api/ai/regenerate-section`, `POST /api/ai/audit`.
 

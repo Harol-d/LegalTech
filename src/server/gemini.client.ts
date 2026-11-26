@@ -25,7 +25,7 @@ export const AI_TOTAL_BUDGET_MS = 150_000;
 /** Error controlado: no hay clave configurada. */
 export class AiNotConfiguredError extends Error {
   constructor() {
-    super('Falta la clave de API de Google (key-Model) en el archivo .env.');
+    super('Falta la clave de API de Google (model) en el archivo .env.');
     this.name = 'AiNotConfiguredError';
   }
 }
@@ -33,12 +33,12 @@ export class AiNotConfiguredError extends Error {
 let client: GoogleGenAI | null = null;
 
 /**
- * Clave de API. Se acepta `key-Model` (nombre solicitado en `.env`) y, como
+ * Clave de API. Se acepta `model` (nombre solicitado en `.env`) y, como
  * respaldo, las variables estándar de Google.
  */
 export function getApiKey(): string | null {
   const raw =
-    process.env['key-Model'] ??
+    process.env['model'] ??
     process.env['GEMINI_API_KEY'] ??
     process.env['GOOGLE_API_KEY'] ??
     '';

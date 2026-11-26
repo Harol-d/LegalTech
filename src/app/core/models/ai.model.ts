@@ -3,7 +3,7 @@
  *
  * El navegador nunca habla directamente con Google: los servicios Angular
  * consumen los endpoints `/api/ai/*` expuestos por el servidor SSR, que es
- * el único que conoce la clave `key-Model`.
+ * el único que conoce la clave `model`.
  */
 
 /**
