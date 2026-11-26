@@ -32,18 +32,17 @@ interface GenerateContentResponse {
  *
  * Todas las funciones de IA de la aplicación pasan por esta capa; ningún
  * componente llama al modelo directamente. Devuelve `Observable<T>` (RxJS)
- * y lee la clave de API `model` desde `.env` -> `environment.keyModel`.
+ * Esta integración heredada no carga secretos en el navegador; el flujo activo
+ * usa el gateway SSR para que la clave permanezca en el servidor.
  */
 @Injectable({ providedIn: 'root' })
 export class GoogleAiService {
   /** Modelo utilizado. Únicamente Google. */
   readonly model = GOOGLE_AI_MODEL;
 
-  /** Clave `model` (nombre exacto solicitado en `.env`). */
+  /** Campo legado vacío; la clave solo está disponible en el servidor SSR. */
   get apiKey(): string {
-    const fromProcess =
-      typeof process !== 'undefined' ? (process.env?.['model'] ?? '') : '';
-    return (environment.keyModel || fromProcess || '').trim();
+    return environment.keyModel.trim();
   }
 
   /** ¿Hay clave `model` configurada para llamar al modelo Google? */
