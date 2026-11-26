@@ -12,7 +12,7 @@ import { loadDotEnv } from './server/env';
 import { isAiEnabled } from './server/gemini.client';
 import { ensureKnowledgeBaseIndexed } from './server/legal-knowledge-base';
 
-// Carga `.env` (clave `model`, modelo y configuración del RAG).
+// Carga `.env` (clave Gemini, modelo y configuración del RAG).
 loadDotEnv();
 
 const browserDistFolder = join(import.meta.dirname, '../browser');

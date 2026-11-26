@@ -69,6 +69,14 @@ describe('AgentOrchestratorService', () => {
   });
 
   it('does not create local drafts when the API key is missing', async () => {
+    const gateway = TestBed.inject(AiGatewayService);
+    vi.spyOn(gateway, 'draftDocument').mockReturnValue(
+      throwError(() => new AiGatewayError('Configure GEMINI_API_KEY en el servidor.', 'AI_NOT_CONFIGURED')),
+    );
+    vi.spyOn(gateway, 'regenerateSection').mockReturnValue(
+      throwError(() => new AiGatewayError('Configure GEMINI_API_KEY en el servidor.', 'AI_NOT_CONFIGURED')),
+    );
+
     await expect(
       firstValueFrom(service.generateDocumentDraft(TEMPLATE, contextWithShares(100))),
     ).rejects.toMatchObject({ code: 'AI_NOT_CONFIGURED' });

@@ -46,7 +46,7 @@ export class AgentOrchestratorService {
   readonly startupContext = this._startupContext.asReadonly();
 
   /** Modo de generación de la última respuesta. */
-  private readonly _aiMode = signal<AiMode>('local-fallback');
+  private readonly _aiMode = signal<AiMode>('unavailable');
   readonly aiMode = this._aiMode.asReadonly();
 
   /** Estado de la IA en el servidor (última consulta). */
@@ -85,7 +85,7 @@ export class AgentOrchestratorService {
       map((status) => status),
       catchError(() => {
         this._aiStatus.set(null);
-        this._aiMode.set('local-fallback');
+        this._aiMode.set('unavailable');
         return of(null);
       }),
     );
@@ -187,7 +187,7 @@ export class AgentOrchestratorService {
     if (
       this.aiMode() === 'gemini-file-search' ||
       this.aiMode() === 'gemini' ||
-      this.aiMode() === 'local-fallback'
+      this.aiMode() === 'unavailable'
     ) {
       return of(localAlerts);
     }
@@ -198,7 +198,7 @@ export class AgentOrchestratorService {
         return mergeAlerts(localAlerts, response.alerts ?? []);
       }),
       catchError(() => {
-        this.applyMode('local-fallback');
+        this.applyMode('unavailable');
         return of(localAlerts);
       }),
     );
@@ -219,7 +219,6 @@ export class AgentOrchestratorService {
       }
     );
   }
-
 }
 
 // ---------------------------------------------------------------------------

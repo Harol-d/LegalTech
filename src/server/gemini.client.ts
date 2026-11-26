@@ -25,7 +25,7 @@ export const AI_TOTAL_BUDGET_MS = 150_000;
 /** Error controlado: no hay clave configurada. */
 export class AiNotConfiguredError extends Error {
   constructor() {
-    super('Falta la clave de API de Google (model) en el archivo .env.');
+    super('Falta GEMINI_API_KEY en el archivo .env del servidor.');
     this.name = 'AiNotConfiguredError';
   }
 }

@@ -70,7 +70,7 @@ interface GeneratedSection {
 
 /**
  * Router `/api/ai`: única puerta de entrada a Google Gemini.
- * La clave (`model`) nunca sale del servidor.
+ * La clave de API nunca sale del servidor.
  */
 export function createAiRouter(): Router {
   const router = Router();
@@ -78,11 +78,11 @@ export function createAiRouter(): Router {
   router.get(
     '/status',
     handle(async (_req: Request, res: Response) => {
-      const knowledgeBase = getCachedStatus();
       const enabled = isAiEnabled();
+      const knowledgeBase = enabled ? getCachedStatus() : null;
       const mode: AiMode = !enabled
-        ? 'local-fallback'
-        : knowledgeBase.storeName
+        ? 'unavailable'
+        : knowledgeBase?.storeName
           ? 'gemini-file-search'
           : 'gemini';
 
@@ -93,9 +93,9 @@ export function createAiRouter(): Router {
         model: getActiveGeminiModel(),
         configuredModel: getGeminiModel(),
         mode,
-        storeName: knowledgeBase.storeName,
-        indexedDocuments: knowledgeBase.indexedDocuments,
-        corpusVersion: knowledgeBase.corpusVersion,
+        storeName: knowledgeBase?.storeName ?? null,
+        indexedDocuments: knowledgeBase?.indexedDocuments ?? 0,
+        corpusVersion: knowledgeBase?.corpusVersion ?? null,
         availableModels,
         message: enabled
           ? 'IA de Google habilitada.'

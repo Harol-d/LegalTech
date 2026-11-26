@@ -179,9 +179,9 @@ El componente `wizard-workspace` debe implementar un `p-stepper` lineal de 3 pas
 
 ### 7.10 Capa de IA real: Google Gemini + File Search (RAG) — Release 1.1
 
-> Fecha: 2026-11-26. Sustituye los borradores simulados de `AgentOrchestratorService` por llamadas reales a Google, manteniendo el fallback local.
+> Fecha: 2026-11-26. La redacción usa Google Gemini a través del servidor. Si falta la clave, la generación falla explícitamente; no hay borradores de respaldo locales.
 
-**Regla de seguridad:** la clave `model` vive **solo** en el servidor SSR. El navegador nunca habla con Google; los servicios Angular consumen `/api/ai/*`.
+**Regla de seguridad:** `GEMINI_API_KEY` vive **solo** en el servidor SSR. El navegador nunca habla con Google; los servicios Angular consumen `/api/ai/*`.
 
 ```text
 Componentes → core/services (AiGatewayService, AgentOrchestratorService)
@@ -206,11 +206,11 @@ Componentes → core/services (AiGatewayService, AgentOrchestratorService)
 - `prompts.ts`: instrucciones de sistema y prompts en español (redactor legal Colombia, auditor de coherencia), esquemas JSON (`Type` de `@google/genai`), `startupContextBlock()`, `stripHtml()`.
 - `ai.routes.ts`: `GET /api/ai/status`, `POST /api/ai/knowledge-base/index`, `/draft-document`, `/draft-section`, `/regenerate-section`, `/audit`; validación de payload, saneo de HTML y errores tipados (`AI_NOT_CONFIGURED` 503, `INVALID_REQUEST` 400, `NOT_FOUND` 404, `AI_ERROR` 502).
 
-**Cliente:** `core/models/ai.model.ts` (`AiMode`, `RagCitation`, `AiStatus`, `KnowledgeBaseStatus`, `DocumentDraftResponse`, `SectionDraftResponse`, `AuditResponse`) y `core/services/ai-gateway.service.ts` (único punto HTTP; `HttpClient` opcional para no romper pruebas aisladas; `timeout(180s)` y mensajes en español).
+**Cliente:** `core/models/ai.model.ts` (`AiMode`, `RagCitation`, `AiStatus`, `KnowledgeBaseStatus`, `DocumentDraftResponse`, `SectionDraftResponse`, `AuditResponse`) y `core/services/ai-gateway.service.ts` (único punto HTTP; `HttpClient` opcional para pruebas aisladas; `timeout(180s)` y mensajes en español).
 
 **Servicio orquestador:** `generateDocumentDraft()` (una llamada para todas las cláusulas), `generateSectionDraft()`, `regenerateSection()` y `auditSections()` (reglas deterministas locales + observaciones del modelo, deduplicadas). Señales: `aiMode`, `aiStatus`, `lastCitations`. Si no hay clave, la generación falla explícitamente y la UI bloquea la aprobación; no crea borradores locales. La auditoría determinista sigue disponible sin IA.
 
-**UI (Paso 2):** tag con el modo (`Gemini + File Search (RAG)` / `Gemini (sin RAG)` / `IA no configurada`), modelo y nº de documentos indexados, botón «Reindexar corpus», aviso de configuración requerida, lista de fuentes RAG recuperadas. Se mantiene la regla HITL: 100% `APPROVED` para avanzar.
+**UI (Paso 2):** tag con el modo (`Gemini + File Search (RAG)` / `Gemini (sin RAG)` / `IA no disponible`), modelo y nº de documentos indexados, botón «Reindexar corpus», aviso de configuración requerida, lista de fuentes RAG recuperadas. Se mantiene la regla HITL: 100% `APPROVED` para avanzar.
 
 **Fix del flujo del wizard:** en PrimeNG 21 el `p-step-panel` **no proyecta contenido** (`<ng-content>`); el contenido debe ir dentro de `<ng-template pTemplate="content">` (o `#content`). `wizard-workspace.html` fue corregido; antes el panel del Paso 1 se renderizaba vacío y «Usar plantilla» parecía no hacer nada.
 

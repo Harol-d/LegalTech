@@ -3,22 +3,22 @@
  *
  * El navegador nunca habla directamente con Google: los servicios Angular
  * consumen los endpoints `/api/ai/*` expuestos por el servidor SSR, que es
- * el único que conoce la clave `model`.
+ * el único que conoce la clave de API.
  */
 
 /**
  * Modo de generación efectivo.
  * - `gemini-file-search`: Gemini con recuperación sobre el corpus legal (RAG).
  * - `gemini`: Gemini sin RAG (el File Search Store no estaba disponible).
- * - `local-fallback`: IA no configurada o no disponible; no se generan borradores.
+ * - `unavailable`: IA no configurada o no disponible; no se generan borradores.
  */
-export type AiMode = 'gemini-file-search' | 'gemini' | 'local-fallback';
+export type AiMode = 'gemini-file-search' | 'gemini' | 'unavailable';
 
 /** Etiquetas en español para la UI. */
 export const AI_MODE_LABELS: Readonly<Record<AiMode, string>> = {
   'gemini-file-search': 'Gemini + File Search (RAG)',
   gemini: 'Gemini (sin RAG)',
-  'local-fallback': 'IA no configurada',
+  unavailable: 'IA no disponible',
 } as const;
 
 /** Fuente recuperada del corpus legal por el File Search Store. */

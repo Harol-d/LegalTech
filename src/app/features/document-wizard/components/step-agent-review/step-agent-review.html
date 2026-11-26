@@ -12,7 +12,7 @@
             <span class="text-xs text-gray-500 dark:text-gray-400">· {{ status.indexedDocuments }} documentos en el corpus</span>
           }
         }
-        @if (!isLocalFallback()) {
+        @if (!isAiUnavailable()) {
           <p-button
             type="button"
             label="Reindexar corpus"
@@ -26,7 +26,7 @@
         }
       </div>
 
-      @if (isLocalFallback()) {
+      @if (isAiUnavailable()) {
         <p-message severity="warn" size="small" class="mb-3">
           No se generarán borradores mientras Google Gemini no esté disponible.
           {{ aiMessage() ?? 'Configure GEMINI_API_KEY en el archivo .env del servidor.' }}

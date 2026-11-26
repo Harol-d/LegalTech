@@ -112,7 +112,7 @@ export class StepAgentReview implements OnInit, AfterViewInit {
   readonly aiMode = this.orchestrator.aiMode;
   readonly aiStatus = this.orchestrator.aiStatus;
   readonly modeLabel = computed(() => AI_MODE_LABELS[this.aiMode()]);
-  readonly isLocalFallback = computed(() => this.aiMode() === 'local-fallback');
+  readonly isAiUnavailable = computed(() => this.aiMode() === 'unavailable');
   readonly aiMessage = computed(() => this.aiStatus()?.message ?? null);
 
   // ── diálogo de regeneración ─────────────────────────────────────────
