@@ -1,23 +1,19 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, forkJoin, of, throwError } from 'rxjs';
-import { catchError, delay, map, tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { DocumentTemplate, LegalSectionDefinition } from '../models/document-template.model';
 import {
   AuditAlert,
   AuditSeverity,
   DocumentSection,
-  generatePlaceholder,
 } from '../models/agent-workflow.model';
 import { StartupContext, totalSharePercentage } from '../models/startup-context.model';
 import type { AiAuditAlert, AiMode, AiStatus, RagCitation } from '../models/ai.model';
-import { AiGatewayError, AiGatewayService } from './ai-gateway.service';
+import { AiGatewayService } from './ai-gateway.service';
 
 // Re-exportamos helpers de id desde el modelo de startup para no duplicar.
 export { generateId } from '../models/startup-context.model';
-
-/** Latencia simulada del modo local de respaldo (ms). */
-export const AGENT_MOCK_LATENCY_MS = 900;
 
 /** Resultado de redactar un documento completo. */
 export interface DocumentDraftResult {
@@ -37,9 +33,8 @@ export interface DocumentDraftResult {
  * - Persiste los datos maestros de la startup en memoria (servicio) para
  *   reutilizarlos al generar múltiples documentos en la misma sesión.
  *
- * Resiliencia: si la IA no está configurada (sin `model`), se generan
- * borradores locales. Los errores de una solicitud real se propagan para que
- * la UI pueda informar al usuario y permitirle reintentar.
+ * La redacción requiere que la IA esté configurada en el servidor. Si no está
+ * disponible, el error se propaga y la UI bloquea la aprobación del documento.
  */
 @Injectable({ providedIn: 'root' })
 export class AgentOrchestratorService {
@@ -118,8 +113,8 @@ export class AgentOrchestratorService {
 
   /**
    * Redacta todas las cláusulas del documento en una sola llamada a Gemini
-   * (con RAG sobre el corpus legal). Si la IA no está configurada, devuelve
-   * borradores locales; si una solicitud real falla, propaga el error.
+   * (con RAG sobre el corpus legal). Si la IA no está configurada o falla,
+   * propaga el error sin sustituir el resultado por un borrador local.
    */
   generateDocumentDraft(template: DocumentTemplate, context: StartupContext): Observable<DocumentDraftResult> {
     return this.ai.draftDocument(template.id, context).pipe(
@@ -132,11 +127,6 @@ export class AgentOrchestratorService {
           mode: response.mode,
         };
       }),
-      catchError((error: unknown) =>
-        isAiNotConfigured(error)
-          ? this.buildLocalDocument(template, context)
-          : throwError(() => error),
-      ),
     );
   }
 
@@ -152,11 +142,6 @@ export class AgentOrchestratorService {
         this._lastCitations.set(response.citations ?? []);
         return { ...response.section };
       }),
-      catchError((error: unknown) =>
-        isAiNotConfigured(error)
-          ? this.buildLocalSection(sectionDefinition, template, context)
-          : throwError(() => error),
-      ),
     );
   }
 
@@ -180,23 +165,6 @@ export class AgentOrchestratorService {
           this._lastCitations.set(response.citations ?? []);
           return { ...response.section };
         }),
-        catchError((error: unknown) =>
-          isAiNotConfigured(error)
-            ? of({
-                ...section,
-                content: appendRegenerationNote(
-                  buildMockedDraft(definition, template, context),
-                  instruction,
-                  section.content,
-                ),
-                status: 'DRAFT_READY' as DocumentSection['status'],
-                updatedAt: new Date().toISOString(),
-              }).pipe(
-                delay(AGENT_MOCK_LATENCY_MS),
-                tap(() => this.applyMode('local-fallback')),
-              )
-            : throwError(() => error),
-        ),
       );
   }
 
@@ -216,7 +184,11 @@ export class AgentOrchestratorService {
 
     // Si todas las secciones provienen de la IA o están aprobadas, las reglas locales
     // cubren la auditoría matemática y estructural sin gastar cuota adicional de Gemini.
-    if (this.aiMode() === 'gemini-file-search' || this.aiMode() === 'gemini') {
+    if (
+      this.aiMode() === 'gemini-file-search' ||
+      this.aiMode() === 'gemini' ||
+      this.aiMode() === 'local-fallback'
+    ) {
       return of(localAlerts);
     }
 
@@ -248,45 +220,6 @@ export class AgentOrchestratorService {
     );
   }
 
-  private buildLocalSection(
-    definition: LegalSectionDefinition,
-    template: DocumentTemplate,
-    context: StartupContext,
-  ): Observable<DocumentSection> {
-    const section: DocumentSection = {
-      id: `section-${definition.id}`,
-      templateSectionId: definition.id,
-      title: definition.title,
-      content: buildMockedDraft(definition, template, context),
-      status: 'DRAFT_READY',
-      updatedAt: new Date().toISOString(),
-    };
-
-    return of(section).pipe(
-      delay(AGENT_MOCK_LATENCY_MS),
-      tap(() => this.applyMode('local-fallback')),
-    );
-  }
-
-  private buildLocalDocument(template: DocumentTemplate, context: StartupContext): Observable<DocumentDraftResult> {
-    this._lastCitations.set([]);
-
-    const drafts = template.sections.map((definition) =>
-      this.buildLocalSection(definition, template, context),
-    );
-
-    return forkJoin(drafts).pipe(
-      map((sections) => ({
-        sections,
-        citations: [] as RagCitation[],
-        mode: 'local-fallback' as AiMode,
-      })),
-    );
-  }
-}
-
-function isAiNotConfigured(error: unknown): boolean {
-  return error instanceof AiGatewayError && error.code === 'AI_NOT_CONFIGURED';
 }
 
 // ---------------------------------------------------------------------------
@@ -300,98 +233,14 @@ function structuredCloneSafe<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 let idCounter = 0;
 function nextAlertId(): string {
   idCounter += 1;
   return `audit-${Date.now().toString(36)}-${idCounter}`;
 }
 
-/** Genera un borrador HTML local (modo de respaldo) para una sección. */
-function buildMockedDraft(definition: LegalSectionDefinition, template: DocumentTemplate, ctx: StartupContext): string {
-  const company = escapeHtml(ctx.legalName || ctx.companyName || '[Nombre de la sociedad]');
-  const title = escapeHtml(definition.title);
-  const guidance = escapeHtml(definition.guidance || '');
-  const basis = definition.legalBasis ? `<p><em>Base legal de referencia: ${escapeHtml(definition.legalBasis)}.</em></p>` : '';
-
-  const partnerRows = ctx.partners.length
-    ? `<ul>${ctx.partners
-        .map(
-          (p) =>
-            `<li>${escapeHtml(p.fullName || '[Nombre del socio]')} — ${escapeHtml(String(p.sharePercentage))}% — ${escapeHtml(
-              p.role,
-            )} — ${escapeHtml(p.documentType)} ${escapeHtml(p.documentNumber || '[número]')}</li>`,
-        )
-        .join('')}</ul>`
-    : '<p><em>[Agregar socios en el Paso 1.]</em></p>';
-
-  const intro = `<h3>${title}</h3>`;
-  const draftNote = `<p><em>[Borrador de demostración generado localmente (sin conexión a la IA). Configure la variable model en el archivo .env para usar Google Gemini con RAG. Requiere revisión humana y validación por un abogado.]</em></p>`;
-
-  const body = renderSectionBody(definition, template, company, ctx, partnerRows);
-
-  return `${intro}${draftNote}<p>${guidance}</p>${body}${basis}`;
-}
-
-function renderSectionBody(
-  definition: LegalSectionDefinition,
-  template: DocumentTemplate,
-  company: string,
-  ctx: StartupContext,
-  partnerRows: string,
-): string {
-  const id = definition.id;
-
-  if (id === 'nombre-razon-social' || id === 'partes' || id === 'responsable') {
-    return `<p>Sociedad: <strong>${company}</strong>${ctx.nit ? `, NIT ${escapeHtml(ctx.nit)}` : ''}.${
-      id === 'partes' ? ' Partes del contrato: ' + partnerRows : ''
-    }</p>`;
-  }
-  if (id === 'socios' || id === 'participacion' || id === 'aportes') {
-    return `<p>Socios y participación accionaria (suma total ${round2(totalSharePercentage(ctx.partners))}%):</p>${partnerRows}`;
-  }
-  if (id === 'capital-social') {
-    return `<p>Capital social inicial: <strong>$${formatCop(ctx.capitalSocial)} COP</strong>. Número total de acciones: <strong>${ctx.numberOfShares}</strong>. Valor nominal por acción: <strong>$${formatCop(
-      ctx.shareNominalValue,
-    )} COP</strong>.</p>${partnerRows}`;
-  }
-  if (id === 'objeto-social') {
-    return `<p>Objeto social de <strong>${company}</strong>: ${escapeHtml(ctx.corporatePurpose || '[describir actividades económicas]')}.</p>`;
-  }
-  if (id === 'domicilio') {
-    return `<p>Domicilio social: ${escapeHtml(ctx.address || '[dirección]')}, ${escapeHtml(ctx.city || '[ciudad]')}, ${escapeHtml(
-      ctx.country || 'Colombia',
-    )}.</p>`;
-  }
-
-  return `<p>Borrador para <strong>${company}</strong> conforme a ${escapeHtml(
-    template.name,
-  )}. Complete los campos entre corchetes [ ] con la información definitiva durante la revisión humana.</p>${generatePlaceholder(definition)}`;
-}
-
-function appendRegenerationNote(newContent: string, instruction: string, previousContent: string): string {
-  const trimmedInstruction = (instruction || '').trim();
-  const note = trimmedInstruction
-    ? `<p><em>[Regenerado con instrucción del usuario: "${escapeHtml(trimmedInstruction)}".]</em></p>`
-    : `<p><em>[Regenerado por el Agente Redactor Legal.]</em></p>`;
-  void previousContent; // reservado para diff futuro contra el borrador previo.
-  return `${newContent}${note}`;
-}
-
 function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function formatCop(value: number): string {
-  const n = Number(value) || 0;
-  return n.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 }
 
 // ---- Agente Auditor de Coherencia -----------------------------------------

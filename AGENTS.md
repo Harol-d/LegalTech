@@ -192,7 +192,7 @@ Componentes → core/services (AiGatewayService, AgentOrchestratorService)
 **Dependencias:** `@google/genai` 3.6.1 (solo servidor; `externalDependencies` en `angular.json`), Node ≥22 (probado en 26). PrimeNG/Angular sin cambios.
 
 **Variables de entorno (`.env` en la raíz, nunca versionado):**
-- `model` — clave de Google AI Studio (vacía = modo demostración local).
+- `GEMINI_API_KEY` — clave de Google AI Studio. Si falta, la redacción y regeneración se bloquean; no se generan borradores simulados.
 - `GEMINI_MODEL` — opcional, por defecto `gemini-2.5-flash`; si el modelo está saturado (503), no existe (404) o agota cuota (429), el servidor prueba respaldos (`gemini-2.5-flash-lite`, `gemini-flash-latest`) sin tocar la UI.
 - `FILE_SEARCH_STORE_NAME` — opcional; si se omite, el store se crea/reutiliza automáticamente.
 
@@ -208,9 +208,9 @@ Componentes → core/services (AiGatewayService, AgentOrchestratorService)
 
 **Cliente:** `core/models/ai.model.ts` (`AiMode`, `RagCitation`, `AiStatus`, `KnowledgeBaseStatus`, `DocumentDraftResponse`, `SectionDraftResponse`, `AuditResponse`) y `core/services/ai-gateway.service.ts` (único punto HTTP; `HttpClient` opcional para no romper pruebas aisladas; `timeout(180s)` y mensajes en español).
 
-**Servicio orquestador:** `generateDocumentDraft()` (una llamada para todas las cláusulas), `generateSectionDraft()`, `regenerateSection()` y `auditSections()` (reglas deterministas locales + observaciones del modelo, deduplicadas). Señales: `aiMode`, `aiStatus`, `lastCitations`. Si no hay clave o falla la red → `local-fallback` con los borradores simulados (la UI nunca se rompe).
+**Servicio orquestador:** `generateDocumentDraft()` (una llamada para todas las cláusulas), `generateSectionDraft()`, `regenerateSection()` y `auditSections()` (reglas deterministas locales + observaciones del modelo, deduplicadas). Señales: `aiMode`, `aiStatus`, `lastCitations`. Si no hay clave, la generación falla explícitamente y la UI bloquea la aprobación; no crea borradores locales. La auditoría determinista sigue disponible sin IA.
 
-**UI (Paso 2):** tag con el modo (`Gemini + File Search (RAG)` / `Gemini (sin RAG)` / `Demostración local`), modelo y nº de documentos indexados, botón «Reindexar corpus», aviso de modo demostración, lista de fuentes RAG recuperadas. Se mantiene la regla HITL: 100% `APPROVED` para avanzar.
+**UI (Paso 2):** tag con el modo (`Gemini + File Search (RAG)` / `Gemini (sin RAG)` / `IA no configurada`), modelo y nº de documentos indexados, botón «Reindexar corpus», aviso de configuración requerida, lista de fuentes RAG recuperadas. Se mantiene la regla HITL: 100% `APPROVED` para avanzar.
 
 **Fix del flujo del wizard:** en PrimeNG 21 el `p-step-panel` **no proyecta contenido** (`<ng-content>`); el contenido debe ir dentro de `<ng-template pTemplate="content">` (o `#content`). `wizard-workspace.html` fue corregido; antes el panel del Paso 1 se renderizaba vacío y «Usar plantilla» parecía no hacer nada.
 

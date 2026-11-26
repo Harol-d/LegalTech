@@ -99,7 +99,7 @@ export function createAiRouter(): Router {
         availableModels,
         message: enabled
           ? 'IA de Google habilitada.'
-          : 'Configure la variable model en el archivo .env para habilitar la IA real. Se usarán borradores de demostración.',
+          : 'Configure GEMINI_API_KEY en el archivo .env del servidor. La generación de borradores está deshabilitada.',
       });
     }),
   );

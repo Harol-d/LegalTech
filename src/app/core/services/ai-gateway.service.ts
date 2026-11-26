@@ -36,9 +36,8 @@ export class AiGatewayError extends Error {
 @Injectable({ providedIn: 'root' })
 export class AiGatewayService {
   /**
-   * `HttpClient` es opcional para que los servicios puedan instanciarse en
-   * contextos sin `provideHttpClient` (p. ej. pruebas unitarias aisladas) y
-   * degradar al modo local en lugar de fallar.
+   * `HttpClient` es opcional para permitir pruebas aisladas. Sin él, la
+   * solicitud falla explícitamente; nunca se sustituye por un borrador local.
    */
   private readonly http = inject(HttpClient, { optional: true });
 
@@ -122,7 +121,7 @@ export class AiGatewayService {
 
     if (!http) {
       return throwError(
-        () => new AiGatewayError('HttpClient no está disponible: se usará el modo local.', 'AI_NOT_CONFIGURED'),
+        () => new AiGatewayError('HttpClient no está disponible en este contexto.', 'AI_NOT_CONFIGURED'),
       );
     }
 

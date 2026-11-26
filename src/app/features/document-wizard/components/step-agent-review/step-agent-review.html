@@ -28,8 +28,8 @@
 
       @if (isLocalFallback()) {
         <p-message severity="warn" size="small" class="mb-3">
-          Modo demostración: no se pudo usar Google Gemini.
-          {{ aiMessage() ?? 'Configure la variable model en el archivo .env.' }}
+          No se generarán borradores mientras Google Gemini no esté disponible.
+          {{ aiMessage() ?? 'Configure GEMINI_API_KEY en el archivo .env del servidor.' }}
         </p-message>
       }
 

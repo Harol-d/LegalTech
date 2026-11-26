@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, throwError } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { AgentOrchestratorService } from './agent-orchestrator.service';
@@ -46,11 +46,50 @@ describe('AgentOrchestratorService', () => {
     expect(service.getStartupContext()).toBeNull();
   });
 
-  it('generates a DRAFT_READY section', async () => {
+  it('uses the gateway response to generate a DRAFT_READY section', async () => {
+    vi.spyOn(TestBed.inject(AiGatewayService), 'draftSection').mockReturnValue(
+      of({
+        section: {
+          id: 'section-objeto-social',
+          templateSectionId: 'objeto-social',
+          title: 'Objeto social',
+          content: '<p>Generado por Gemini</p>',
+          status: 'DRAFT_READY',
+          updatedAt: new Date().toISOString(),
+        },
+        citations: [],
+        mode: 'gemini',
+      }),
+    );
+
     const section = await firstValueFrom(service.generateSectionDraft(TEMPLATE.sections[0], TEMPLATE, contextWithShares(100)));
     expect(section.status).toBe('DRAFT_READY');
     expect(section.title).toBe('Objeto social');
-    expect(section.content.length).toBeGreaterThan(0);
+    expect(section.content).toContain('Generado por Gemini');
+  });
+
+  it('does not create local drafts when the API key is missing', async () => {
+    await expect(
+      firstValueFrom(service.generateDocumentDraft(TEMPLATE, contextWithShares(100))),
+    ).rejects.toMatchObject({ code: 'AI_NOT_CONFIGURED' });
+
+    await expect(
+      firstValueFrom(
+        service.regenerateSection(
+          {
+            id: 'section-objeto-social',
+            templateSectionId: 'objeto-social',
+            title: 'Objeto social',
+            content: '<p>Borrador previo</p>',
+            status: 'DRAFT_READY',
+            updatedAt: new Date().toISOString(),
+          },
+          '',
+          TEMPLATE,
+          contextWithShares(100),
+        ),
+      ),
+    ).rejects.toMatchObject({ code: 'AI_NOT_CONFIGURED' });
   });
 
   it('propagates quota errors instead of substituting a local draft', async () => {

@@ -10,7 +10,7 @@
  * Modo de generación efectivo.
  * - `gemini-file-search`: Gemini con recuperación sobre el corpus legal (RAG).
  * - `gemini`: Gemini sin RAG (el File Search Store no estaba disponible).
- * - `local-fallback`: borradores simulados locales (sin clave o error de red).
+ * - `local-fallback`: IA no configurada o no disponible; no se generan borradores.
  */
 export type AiMode = 'gemini-file-search' | 'gemini' | 'local-fallback';
 
@@ -18,7 +18,7 @@ export type AiMode = 'gemini-file-search' | 'gemini' | 'local-fallback';
 export const AI_MODE_LABELS: Readonly<Record<AiMode, string>> = {
   'gemini-file-search': 'Gemini + File Search (RAG)',
   gemini: 'Gemini (sin RAG)',
-  'local-fallback': 'Demostración local',
+  'local-fallback': 'IA no configurada',
 } as const;
 
 /** Fuente recuperada del corpus legal por el File Search Store. */

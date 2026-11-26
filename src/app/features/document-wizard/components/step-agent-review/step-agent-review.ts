@@ -198,9 +198,7 @@ export class StepAgentReview implements OnInit, AfterViewInit {
           this.loading.set(false);
           this.pushTimeline(
             'Agente Redactor Legal',
-            this.isLocalFallback()
-              ? 'Borradores de demostración generados localmente (sin IA).'
-              : `Borradores generados con ${this.modeLabel()}. Revise y apruebe cada cláusula.`,
+            `Borradores generados con ${this.modeLabel()}. Revise y apruebe cada cláusula.`,
             'done'
           );
           this.emitSections();

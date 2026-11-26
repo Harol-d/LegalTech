@@ -106,7 +106,7 @@ export async function listAvailableModels(): Promise<AvailableModelInfo[]> {
   ];
 
   if (!isAiEnabled()) {
-    return fallbackList;
+    return [];
   }
 
   try {
