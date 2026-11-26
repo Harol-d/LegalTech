@@ -1,0 +1,57 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import 'tailwindcss';
+
+/*
+  Tailwind v4: se debe declarar el variant "dark" explícitamente
+  para que responda a la clase .dark en <html> (y no solo a prefers-color-scheme).
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Tokens base en modo oscuro ── */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #030712; /* gray-950 */
+  color: #f3f4f6;            /* gray-100 */
+}
+
+/* ── Backgrounds ── */
+.dark .bg-white    { background-color: #111827 !important; } /* gray-900 */
+.dark .bg-gray-50  { background-color: #111827 !important; } /* gray-900 */
+.dark .bg-gray-100 { background-color: #1f2937 !important; } /* gray-800 */
+
+/* ── Texto ── */
+.dark .text-gray-900 { color: #f9fafb !important; } /* gray-50  */
+.dark .text-gray-800 { color: #e5e7eb !important; } /* gray-200 */
+.dark .text-gray-700 { color: #d1d5db !important; } /* gray-300 */
+.dark .text-gray-600 { color: #9ca3af !important; } /* gray-400 */
+.dark .text-gray-500 { color: #6b7280 !important; } /* gray-500 */
+
+/* ── Bordes ── */
+.dark .border-gray-100 { border-color: #374151 !important; } /* gray-700 */
+.dark .border-gray-200 { border-color: #374151 !important; } /* gray-700 */
+.dark .border-gray-300 { border-color: #4b5563 !important; } /* gray-600 */
+
+/* ── Contenedor de detalles del modelo (template-catalog) ── */
+.dark .rounded-lg.border.bg-gray-50 {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+/* ── Quill editor en dark mode ── */
+.dark .ql-toolbar {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+.dark .ql-toolbar .ql-stroke { stroke: #9ca3af !important; }
+.dark .ql-toolbar .ql-fill   { fill: #9ca3af !important; }
+.dark .ql-toolbar .ql-picker-label { color: #9ca3af !important; }
+.dark .ql-container {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+  color: #e5e7eb !important;
+}
+

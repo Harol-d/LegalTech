@@ -1,0 +1,30 @@
+<header class="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+  <div class="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3">
+    <!-- Logo / Título -->
+    <div class="flex flex-1 items-center gap-2">
+      <i class="pi pi-file-edit text-primary text-lg"></i>
+      <span class="font-semibold text-gray-900 dark:text-gray-100">Legal Doc Wizard</span>
+      <span class="hidden text-sm text-gray-500 dark:text-gray-400 sm:block">
+        Documentos legales para startups en Colombia
+      </span>
+    </div>
+
+    <!-- Toggle modo oscuro -->
+    <p-button
+      type="button"
+      [icon]="theme.icon()"
+      [pTooltip]="theme.tooltip()"
+      tooltipPosition="bottom"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      size="small"
+      (onClick)="theme.toggle()"
+      aria-label="Cambiar tema"
+    />
+  </div>
+</header>
+
+<main class="bg-gray-50 dark:bg-gray-950 min-h-screen">
+  <router-outlet />
+</main>

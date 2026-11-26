@@ -1,0 +1,254 @@
+<div class="grid grid-cols-12 gap-4">
+  <!-- Columna izquierda (8): editor unificado -->
+  <div class="col-span-12 md:col-span-8">
+    <p-card header="Paso 2: Redacción y Auditoría Human-in-the-Loop" subheader="Agente Redactor Legal + Agente Auditor de Coherencia">
+
+      <!-- Motor de IA -->
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        <p-tag [value]="modeLabel()" [severity]="modeSeverity(aiMode())" />
+        @if (aiStatus(); as status) {
+          <span class="text-xs text-gray-500 dark:text-gray-400">Modelo: {{ status.model }}</span>
+          @if (status.indexedDocuments > 0) {
+            <span class="text-xs text-gray-500 dark:text-gray-400">· {{ status.indexedDocuments }} documentos en el corpus</span>
+          }
+        }
+        @if (!isLocalFallback()) {
+          <p-button
+            type="button"
+            label="Reindexar corpus"
+            icon="pi pi-database"
+            size="small"
+            severity="secondary"
+            text
+            [loading]="indexingCorpus()"
+            (onClick)="reindexCorpus()"
+          />
+        }
+      </div>
+
+      @if (isLocalFallback()) {
+        <p-message severity="warn" size="small" class="mb-3">
+          Modo demostración: no se pudo usar Google Gemini.
+          {{ aiMessage() ?? 'Configure la variable key-Model en el archivo .env.' }}
+        </p-message>
+      }
+
+      <!-- Progreso y aprobación -->
+      <div class="mb-4">
+        <div class="mb-1 flex items-center justify-between text-sm">
+          <span>Secciones aprobadas: {{ approvedCount() }} / {{ totalCount() }}</span>
+          <span>{{ progress() }}%</span>
+        </div>
+        @if (!allApproved()) {
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <p-message severity="warn" size="small" class="flex-1">
+              Debe aprobar las cláusulas para avanzar al Paso 3.
+            </p-message>
+            <p-button
+              type="button"
+              label="Aprobar Todo el Documento"
+              icon="pi pi-check-circle"
+              severity="success"
+              size="small"
+              [disabled]="loading() || generationError() !== null || totalCount() === 0"
+              (onClick)="approveAll()"
+            />
+          </div>
+        }
+      </div>
+
+      <!-- Barra de progreso indeterminada: visible durante generación inicial o regeneración -->
+      @if (loading() || regenerating()) {
+        <p-progressbar mode="indeterminate" styleClass="mb-3" [style]="{ height: '4px' }" />
+      }
+
+      <!-- Mensaje de estado -->
+      @if (loading()) {
+        <p-message severity="info" size="small" class="mb-3">
+          Generando documento con el Agente Redactor Legal (Google Gemini)…
+        </p-message>
+      } @else if (regenerating()) {
+        <p-message severity="info" size="small" class="mb-3">
+          Regenerando cláusula con el Agente Redactor Legal…
+        </p-message>
+      }
+
+      <!-- Skeleton sólo en la carga inicial (editor aún vacío) -->
+      @if (loading()) {
+        <p-skeleton height="560px" />
+      } @else {
+        <!-- Editor unificado de todo el documento -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Contenido completo del documento (editable):</span>
+            @if (allApproved()) {
+              <p-tag value="DOCUMENTO APROBADO" severity="success" />
+            }
+          </div>
+
+          <!-- Wrapper con overlay de carga durante regeneración -->
+          <div class="relative">
+            @if (generationError(); as error) {
+              <div class="flex min-h-56 flex-col items-center justify-center gap-3 rounded-md border border-red-200 bg-red-50 p-6 text-center dark:border-red-900 dark:bg-red-950">
+                <p-message severity="error" class="max-w-xl">
+                  No se pudo obtener la respuesta del modelo de Google. {{ error }}
+                </p-message>
+                <p-button
+                  type="button"
+                  label="Volver a intentar"
+                  icon="pi pi-refresh"
+                  [loading]="loading()"
+                  (onClick)="retryGeneration()"
+                />
+              </div>
+            } @else {
+              <p-editor
+                #editor
+                [(ngModel)]="editorContent"
+                (onTextChange)="onEditorContentChange($event.htmlValue ?? '')"
+                [style]="{ height: '560px' }"
+              ></p-editor>
+            }
+
+            <!-- Overlay semitransparente + spinner mientras regenera -->
+            @if (regenerating()) {
+              <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-md bg-white/70 backdrop-blur-sm dark:bg-gray-900/70">
+                <p-progress-spinner
+                  strokeWidth="4"
+                  animationDuration=".8s"
+                  styleClass="w-14 h-14"
+                />
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Regenerando cláusula…
+                </span>
+              </div>
+            }
+          </div>
+
+          <!-- Chips por cláusula con botón de regeneración individual -->
+          <div class="mt-2">
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Cláusulas del documento</h4>
+            <div class="flex flex-wrap gap-2">
+              @for (section of sections(); track section.id) {
+                <div class="flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs dark:border-gray-700 dark:bg-gray-800">
+                  <span class="font-medium text-gray-800 dark:text-gray-200">{{ section.title }}</span>
+                  <p-tag [value]="statusLabels[section.status]" [severity]="statusSeverity(section.status)" />
+                  <p-button
+                    type="button"
+                    icon="pi pi-sparkles"
+                    size="small"
+                    severity="secondary"
+                    text
+                    [disabled]="regenerating() || loading()"
+                    (onClick)="openRegenerateDialog(section)"
+                    pTooltip="Regenerar esta cláusula"
+                  />
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </p-card>
+  </div>
+
+  <!-- Columna derecha (4): panel lateral -->
+  <div class="col-span-12 md:col-span-4">
+    <p-card header="Panel del Agente" subheader="Progreso y auditoría">
+      <h4 class="mb-2 text-sm font-semibold">Línea de tiempo de agentes</h4>
+      @if (timeline().length === 0) {
+        <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Sin actividad todavía.</p>
+      } @else {
+        <p-timeline [value]="timeline()" styleClass="mb-4">
+          <ng-template pTemplate="content" let-event>
+            <div class="mb-3 text-sm">
+              <div class="font-medium">{{ event.agent }}</div>
+              <div class="text-gray-600 dark:text-gray-400">{{ event.message }}</div>
+              <div class="text-xs text-gray-400 dark:text-gray-500">{{ event.timestamp | date: 'HH:mm:ss' }}</div>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="marker" let-event>
+            <span class="flex h-3 w-3 items-center justify-center rounded-full"
+                  [class.bg-green-500]="event.status === 'done'"
+                  [class.bg-blue-500]="event.status === 'running'"
+                  [class.bg-red-500]="event.status === 'error'"
+                  [class.bg-gray-300]="event.status === 'pending'"></span>
+          </ng-template>
+        </p-timeline>
+      }
+
+      <!-- Fuentes RAG -->
+      @if (hasCitations()) {
+        <div class="mb-4">
+          <h4 class="mb-2 text-sm font-semibold">Fuentes del corpus legal (RAG)</h4>
+          <ul class="flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-400">
+            @for (citation of citations(); track citation.title + (citation.source ?? '')) {
+              <li class="flex gap-1">
+                <i class="pi pi-file-check mt-0.5 text-green-600"></i>
+                <span>{{ citation.title }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- Auditor -->
+      <div class="mt-4 flex items-center justify-between">
+        <h4 class="text-sm font-semibold">Observaciones del Auditor</h4>
+        <p-button type="button" icon="pi pi-refresh" label="Re-auditar" size="small" text [loading]="auditing()" (onClick)="runAudit()" />
+      </div>
+
+      @if (auditAlerts().length === 0) {
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Sin observaciones.</p>
+      } @else {
+        <div class="mt-2 flex flex-col gap-2">
+          @for (alert of auditAlerts(); track alert.id) {
+            <p-message [severity]="alertSeverity(alert.severity)" size="small">
+              <strong>{{ alert.category }}:</strong> {{ alert.message }}
+            </p-message>
+          }
+        </div>
+      }
+    </p-card>
+  </div>
+</div>
+
+<!-- Diálogo: Regenerar con Agente -->
+<p-dialog
+  header="Regenerar con Agente"
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '32rem' }"
+  [draggable]="false"
+>
+  <div class="flex flex-col gap-3">
+    @if (regenerationError(); as error) {
+      <p-message severity="error">
+        No se pudo obtener la respuesta del modelo de Google. {{ error }}
+      </p-message>
+    }
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      Sección: <strong>{{ dialogSection()?.title }}</strong>.
+      Indique una instrucción de ajuste para el Agente Redactor Legal.
+    </p>
+    <textarea
+      pTextarea
+      rows="4"
+      class="w-full"
+      placeholder="Ej. Hacer el tono más formal y citar la Ley 1429 de 2010…"
+      [ngModel]="instruction()"
+      (ngModelChange)="instruction.set($event)"
+    ></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button type="button" label="Cancelar" severity="secondary" text (onClick)="closeRegenerateDialog()" />
+    <p-button
+      type="button"
+      [label]="regenerationError() ? 'Volver a intentar' : 'Regenerar'"
+      icon="pi pi-sparkles"
+      [loading]="regenerating()"
+      (onClick)="confirmRegenerate()"
+    />
+  </ng-template>
+</p-dialog>

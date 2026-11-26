@@ -1,0 +1,163 @@
+<form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-4" novalidate>
+  <p-card header="Paso 1: Contexto de la Startup" subheader="Agente Entrevistador">
+    <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+      Complete los datos maestros de la startup y sus socios. Esta información se reutiliza en todos los documentos
+      que genere en esta sesión.
+    </p>
+
+    <div class="grid grid-cols-12 gap-4">
+      <!-- Datos de la sociedad -->
+      <div class="col-span-12 md:col-span-6">
+        <label for="companyName" class="mb-1 block text-sm font-medium">Nombre comercial *</label>
+        <input id="companyName" pInputText formControlName="companyName" class="w-full" placeholder="Ej. Mi Startup" />
+        @if (form.controls.companyName.touched && form.controls.companyName.invalid) {
+          <p-message severity="error" size="small" variant="simple">El nombre comercial es obligatorio.</p-message>
+        }
+      </div>
+
+      <div class="col-span-12 md:col-span-6">
+        <label for="legalName" class="mb-1 block text-sm font-medium">Razón social *</label>
+        <input id="legalName" pInputText formControlName="legalName" class="w-full" placeholder="Ej. Mi Startup S.A.S." />
+        @if (form.controls.legalName.touched && form.controls.legalName.invalid) {
+          <p-message severity="error" size="small" variant="simple">La razón social es obligatoria.</p-message>
+        }
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="nit" class="mb-1 block text-sm font-medium">NIT *</label>
+        <input id="nit" pInputText formControlName="nit" class="w-full" placeholder="Ej. 901.234.567-8" />
+        @if (form.controls.nit.touched && form.controls.nit.invalid) {
+          <p-message severity="error" size="small" variant="simple">El NIT es obligatorio.</p-message>
+        }
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="legalType" class="mb-1 block text-sm font-medium">Tipo societario *</label>
+        <p-select id="legalType" formControlName="legalType" [options]="legalTypeOptions" optionLabel="label" optionValue="value" class="w-full" appendTo="body" />
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="corporateEmail" class="mb-1 block text-sm font-medium">Correo corporativo</label>
+        <input id="corporateEmail" pInputText type="email" formControlName="corporateEmail" class="w-full" placeholder="contacto@empresa.co" />
+        @if (form.controls.corporateEmail.touched && form.controls.corporateEmail.invalid) {
+          <p-message severity="error" size="small" variant="simple">Correo electrónico inválido.</p-message>
+        }
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="country" class="mb-1 block text-sm font-medium">País *</label>
+        <input id="country" pInputText formControlName="country" class="w-full" />
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="city" class="mb-1 block text-sm font-medium">Ciudad de domicilio *</label>
+        <input id="city" pInputText formControlName="city" class="w-full" placeholder="Ej. Bogotá" />
+        @if (form.controls.city.touched && form.controls.city.invalid) {
+          <p-message severity="error" size="small" variant="simple">La ciudad es obligatoria.</p-message>
+        }
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="address" class="mb-1 block text-sm font-medium">Dirección *</label>
+        <input id="address" pInputText formControlName="address" class="w-full" placeholder="Calle 1 #2-3" />
+        @if (form.controls.address.touched && form.controls.address.invalid) {
+          <p-message severity="error" size="small" variant="simple">La dirección es obligatoria.</p-message>
+        }
+      </div>
+
+      <div class="col-span-12">
+        <label for="corporatePurpose" class="mb-1 block text-sm font-medium">Objeto social *</label>
+        <textarea
+          id="corporatePurpose"
+          pTextarea
+          rows="3"
+          formControlName="corporatePurpose"
+          class="w-full"
+          placeholder="Describa las actividades económicas y finalidades de la sociedad..."
+        ></textarea>
+        @if (form.controls.corporatePurpose.touched && form.controls.corporatePurpose.invalid) {
+          <p-message severity="error" size="small" variant="simple">El objeto social es obligatorio (mín. 10 caracteres).</p-message>
+        }
+      </div>
+
+      <!-- Capital -->
+      <div class="col-span-12 md:col-span-4">
+        <label for="numberOfShares" class="mb-1 block text-sm font-medium">Número total de acciones *</label>
+        <p-inputnumber id="numberOfShares" formControlName="numberOfShares" [min]="1" [useGrouping]="true" class="w-full" inputStyleClass="w-full" />
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="shareNominalValue" class="mb-1 block text-sm font-medium">Valor nominal por acción (COP) *</label>
+        <p-inputnumber id="shareNominalValue" formControlName="shareNominalValue" [min]="0" [useGrouping]="true" mode="currency" currency="COP" locale="es-CO" class="w-full" inputStyleClass="w-full" />
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <label for="capitalSocial" class="mb-1 block text-sm font-medium">Capital social inicial (COP) *</label>
+        <p-inputnumber id="capitalSocial" formControlName="capitalSocial" [min]="0" [useGrouping]="true" mode="currency" currency="COP" locale="es-CO" class="w-full" inputStyleClass="w-full" />
+      </div>
+    </div>
+
+    <!-- Socios y porcentajes accionarios -->
+    <div class="mt-6">
+      <div class="mb-2 flex items-center justify-between">
+        <h3 class="text-base font-semibold">Socios y participación accionaria</h3>
+        <p-button type="button" label="Agregar socio" icon="pi pi-plus" size="small" severity="secondary" (onClick)="addPartner()" />
+      </div>
+
+      <div formArrayName="partners">
+        <p-table [value]="partners.controls" styleClass="p-datatable-sm" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Nombre / Razón social</th>
+              <th>Naturaleza</th>
+              <th>Tipo documento</th>
+              <th>Número</th>
+              <th>Rol</th>
+              <th class="w-32">% Accionario</th>
+              <th>Correo</th>
+              <th>Teléfono</th>
+              <th class="w-16"></th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-i="rowIndex">
+            <tr [formGroupName]="i">
+              <td><input pInputText formControlName="fullName" class="w-full" placeholder="Nombre completo" /></td>
+              <td>
+                <p-select formControlName="entityType" [options]="entityTypeOptions" optionLabel="label" optionValue="value" class="w-full" appendTo="body" />
+              </td>
+              <td>
+                <p-select formControlName="documentType" [options]="documentTypeOptions" optionLabel="label" optionValue="value" class="w-full" appendTo="body" />
+              </td>
+              <td><input pInputText formControlName="documentNumber" class="w-full" placeholder="Número" /></td>
+              <td>
+                <p-select formControlName="role" [options]="partnerRoleOptions" optionLabel="label" optionValue="value" class="w-full" appendTo="body" />
+              </td>
+              <td><p-inputnumber formControlName="sharePercentage" [min]="0" [max]="100" [maxFractionDigits]="2" suffix=" %" class="w-full" inputStyleClass="w-full" /></td>
+              <td><input pInputText type="email" formControlName="email" class="w-full" placeholder="correo@empresa.co" /></td>
+              <td><input pInputText formControlName="phone" class="w-full" placeholder="300 123 4567" /></td>
+              <td>
+                <p-button type="button" icon="pi pi-trash" severity="danger" text [rounded]="true" [disabled]="partners.length <= 1" (onClick)="removePartner(i)" ariaLabel="Eliminar socio" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="9" class="text-center text-gray-500 dark:text-gray-400">Sin socios. Agregue al menos uno.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Indicador de suma accionaria -->
+      <div class="mt-3">
+        @if (shareSumOk()) {
+          <p-message severity="success" size="small">Suma de porcentajes accionarios: {{ totalShare() }}% (correcto).</p-message>
+        } @else {
+          <p-message severity="warn" size="small">Suma de porcentajes accionarios: {{ totalShare() }}%. Debe ser exactamente 100%.</p-message>
+        }
+      </div>
+    </div>
+
+    <div class="mt-6 flex justify-end">
+      <p-button type="submit" label="Continuar al Paso 2" icon="pi pi-arrow-right" iconPos="right" [disabled]="!formValid()" />
+    </div>
+  </p-card>
+</form>

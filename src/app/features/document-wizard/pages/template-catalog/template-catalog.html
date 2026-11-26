@@ -1,0 +1,173 @@
+<section class="mx-auto max-w-6xl px-4 py-8">
+  <header class="mb-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Catálogo de documentos legales</h1>
+        <p class="mt-1 text-gray-600 dark:text-gray-400">
+          Seleccione una plantilla para startups en Colombia. Luego complete el contexto y revise cada cláusula
+          (Human-in-the-Loop) antes de exportar en PDF o DOCX.
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <p-button
+          type="button"
+          icon="pi pi-cog"
+          label="Configurar Modelo"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          pTooltip="Configurar el modelo de Google Gemini para File Search"
+          (onClick)="openConfigDialog()"
+        />
+      </div>
+    </div>
+    <div class="mt-3 flex flex-wrap items-center gap-2">
+      <p-tag severity="info" [value]="'Modelo activo: ' + currentModel()" icon="pi pi-bolt" />
+    </div>
+    <p-message severity="info" size="small" class="mt-3 block">
+      Los documentos son borradores asistidos por IA. Requieren revisión humana y validación por un abogado.
+      No constituyen asesoría legal.
+    </p-message>
+  </header>
+
+  @if (loading()) {
+    <div class="grid grid-cols-12 gap-4">
+      @for (s of skeletons(6); track s) {
+        <div class="col-span-12 md:col-span-4">
+          <p-card><p-skeleton height="8rem" /></p-card>
+        </div>
+      }
+    </div>
+  } @else {
+    <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">{{ totalTemplates() }} plantillas en {{ categoryGroups().length }} categorías.</p>
+
+    @for (group of categoryGroups(); track group.category) {
+      <section class="mb-8">
+        <h2 class="mb-3 text-lg font-semibold text-gray-800 dark:text-gray-200">{{ group.category }}</h2>
+        <div class="grid grid-cols-12 gap-4">
+          @for (template of group.templates; track template.id) {
+            <div class="col-span-12 md:col-span-6 lg:col-span-4">
+              <p-card styleClass="h-full">
+                <ng-template pTemplate="title">{{ template.name }}</ng-template>
+                <ng-template pTemplate="subtitle">
+                  <p-tag [value]="template.category" severity="secondary" />
+                </ng-template>
+
+                <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">{{ template.description }}</p>
+
+                <div class="mb-3">
+                  <p class="mb-1 text-xs font-semibold uppercase text-gray-500 dark:text-gray-500">Base legal</p>
+                  <ul class="list-disc pl-5 text-xs text-gray-600 dark:text-gray-400">
+                    @for (basis of template.legalBasis; track basis) {
+                      <li>{{ basis }}</li>
+                    }
+                  </ul>
+                </div>
+
+                <p class="mb-3 text-xs text-gray-500 dark:text-gray-500">{{ template.sections.length }} secciones</p>
+
+                <div class="flex justify-end pt-2">
+                  <p-button
+                    type="button"
+                    label="Usar plantilla"
+                    icon="pi pi-arrow-right"
+                    iconPos="right"
+                    size="small"
+                    (onClick)="startWizard(template)"
+                  />
+                </div>
+              </p-card>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+
+  <!-- Modal de Configuración de Modelo (Google Gemini / File Search) -->
+  <p-dialog
+    [visible]="showConfigDialog()"
+    (visibleChange)="showConfigDialog.set($event)"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '92vw', maxWidth: '38rem' }"
+    header="Configuración de Modelo de IA (Google File Search)"
+  >
+    <div class="space-y-4 pt-2">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        Seleccione el modelo de Google Gemini que desea utilizar para la generación estructurada y la consulta con
+        File Search (RAG) sobre el corpus legal.
+      </p>
+
+      @if (configMessage()) {
+        <p-message severity="success" size="small" [text]="configMessage()!" />
+      }
+
+      @if (configError()) {
+        <p-message severity="error" size="small" [text]="configError()!" />
+      }
+
+      <div class="space-y-2">
+        <label for="modelSelect" class="block text-xs font-semibold uppercase text-gray-700 dark:text-gray-300">
+          Modelo disponible
+        </label>
+        @if (loadingModels()) {
+          <div class="flex items-center gap-2 py-2">
+            <p-skeleton width="100%" height="2.5rem" />
+          </div>
+        } @else {
+          <p-select
+            inputId="modelSelect"
+            [options]="modelOptions()"
+            [ngModel]="selectedModel()"
+            (ngModelChange)="selectedModel.set($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccione un modelo"
+            styleClass="w-full"
+            appendTo="body"
+            scrollHeight="16rem"
+            [filter]="true"
+            filterBy="label,description"
+          />
+        }
+      </div>
+
+      @if (selectedModelDetails(); as details) {
+        <div class="rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-700 space-y-1.5 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-gray-900 dark:text-gray-100">{{ details.displayName }}</span>
+            <p-tag severity="success" value="File Search compatible" icon="pi pi-check" />
+          </div>
+          <p class="text-gray-600 dark:text-gray-400">{{ details.description }}</p>
+          @if (details.inputTokenLimit) {
+            <p class="text-gray-500 dark:text-gray-500">
+              Límite de tokens de entrada: <strong>{{ details.inputTokenLimit.toLocaleString() }}</strong>
+            </p>
+          }
+        </div>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2 pt-3">
+        <p-button
+          type="button"
+          label="Cerrar"
+          severity="secondary"
+          [text]="true"
+          (onClick)="closeConfigDialog()"
+        />
+        <p-button
+          type="button"
+          label="Guardar y Aplicar"
+          icon="pi pi-check"
+          [loading]="savingModel()"
+          [disabled]="loadingModels() || !selectedModel()"
+          (onClick)="saveModel()"
+        />
+      </div>
+    </ng-template>
+  </p-dialog>
+</section>
